@@ -40,7 +40,7 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
         @Override
         protected Map<DataEntry<?>, Object> prepare(ResourceManager resourceManager, ProfilerFiller profiler)
         {
-            Map<DataEntry<?>, Object> values = new HashMap<>();
+            Map<DataEntry<?>, Object> values = new HashMap<>(DataEntry.MAP);
 
             for (DataEntry<?> entry : DataEntry.MAP.keySet())
             {
