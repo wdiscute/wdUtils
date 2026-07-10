@@ -13,6 +13,8 @@ import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredItem;
 
+import java.util.Optional;
+
 public record MaybeStack(@DoNotCall @Deprecated ResourceLocation rl, @DoNotCall @Deprecated ItemStack stack)
 {
     public static final MaybeStack EMPTY = new MaybeStack(ItemStack.EMPTY);
@@ -20,6 +22,12 @@ public record MaybeStack(@DoNotCall @Deprecated ResourceLocation rl, @DoNotCall 
     public MaybeStack(ResourceLocation rl)
     {
         this(rl, ItemStack.EMPTY);
+    }
+
+    //if rl is registered, sets itemstack as the default instance
+    public static MaybeStack of(ResourceLocation rl)
+    {
+        return BuiltInRegistries.ITEM.getOptional(rl).map(item -> new MaybeStack(item.getDefaultInstance())).orElseGet(() -> new MaybeStack(rl));
     }
 
     public MaybeStack(String ns, String path)
@@ -69,7 +77,7 @@ public record MaybeStack(@DoNotCall @Deprecated ResourceLocation rl, @DoNotCall 
             ItemStack.CODEC,
             ResourceLocation.CODEC
     ).xmap(
-            either -> either.map(MaybeStack::new, MaybeStack::new),
+            either -> either.map(MaybeStack::new, MaybeStack::of),
             maybeStack -> !maybeStack.isEmpty()
                     ? Either.left(maybeStack.toStack())
                     : Either.right(maybeStack.rl())
