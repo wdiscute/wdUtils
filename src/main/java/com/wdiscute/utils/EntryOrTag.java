@@ -5,9 +5,8 @@ import com.mojang.serialization.DataResult;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
-import net.minecraft.core.RegistryAccess;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 
 import java.util.Optional;
@@ -17,7 +16,7 @@ public sealed interface EntryOrTag<T>
     default String getTranslation()
     {
         if (this instanceof Entry<T>(ResourceKey<T> key))
-            return "biome." + key.location().toLanguageKey();
+            return "biome." + key.identifier().toLanguageKey();
         if (this instanceof Tag<T>(TagKey<T> tag))
             return "tag." + tag.location().toLanguageKey();
         return "uuuuhhh something went wrong! Oops...";
@@ -43,7 +42,7 @@ public sealed interface EntryOrTag<T>
         @Override
         public boolean matches(Holder<T> biome, Registry<T> registry)
         {
-            Optional<HolderSet.Named<T>> set = registry.getTag(tag);
+            Optional<HolderSet.Named<T>> set = registry.get(tag);
 
             return set.map(holders -> holders.contains(biome)).orElse(false);
         }
@@ -56,7 +55,7 @@ public sealed interface EntryOrTag<T>
                 {
                     if (s.startsWith("#"))
                     {
-                        ResourceLocation loc = ResourceLocation.tryParse(s.substring(1));
+                        Identifier loc = Identifier.tryParse(s.substring(1));
                         if (loc == null)
                         {
                             return DataResult.error(() -> "Invalid tag id: " + s);
@@ -65,7 +64,7 @@ public sealed interface EntryOrTag<T>
                     }
                     else
                     {
-                        ResourceLocation loc = ResourceLocation.tryParse(s);
+                        Identifier loc = Identifier.tryParse(s);
                         if (loc == null)
                         {
                             return DataResult.error(() -> "Invalid resource id: " + s);
@@ -75,7 +74,7 @@ public sealed interface EntryOrTag<T>
                 },
                 entryOrTag -> switch (entryOrTag)
                 {
-                    case Entry<T> e -> e.key().location().toString();
+                    case Entry<T> e -> e.key().identifier().toString();
                     case Tag<T> t -> "#" + t.tag().location();
                 }
         );

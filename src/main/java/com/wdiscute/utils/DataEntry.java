@@ -6,8 +6,7 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
-import net.minecraft.Util;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.GsonHelper;
@@ -17,7 +16,7 @@ import java.io.BufferedReader;
 import java.util.HashMap;
 import java.util.Map;
 
-public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
+public record DataEntry<T>(Identifier rl, Codec<T> codec)
 {
     private static final Gson GSON = new Gson();
     public static final Map<DataEntry<?>, Object> MAP = new HashMap<>();
@@ -28,7 +27,7 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
         return (T) MAP.get(this);
     }
 
-    public static <T> DataEntry<T> register(ResourceLocation rl, Codec<T> codec, T defaultValue)
+    public static <T> DataEntry<T> register(Identifier rl, Codec<T> codec, T defaultValue)
     {
         DataEntry<T> entry = new DataEntry<>(rl, codec);
         MAP.put(entry, defaultValue);
@@ -44,7 +43,7 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
 
             for (DataEntry<?> entry : DataEntry.MAP.keySet())
             {
-                ResourceLocation file = Utils.rl(entry.rl().getNamespace(), entry.rl().getPath() + ".json");
+                Identifier file = Utils.rl(entry.rl().getNamespace(), entry.rl().getPath() + ".json");
 
                 resourceManager.getResource(file).ifPresent(resource ->
                 {

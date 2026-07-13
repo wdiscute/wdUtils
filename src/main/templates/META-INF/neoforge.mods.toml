@@ -1,34 +1,27 @@
-modLoader="javafml" #mandatory
+license="${mod_license}"
 
-loaderVersion="[2,]" #mandatory
-
-license="MIT"
-
-issueTrackerURL="https://discord.gg/WsuFsGSegD" #optional
-
-[[mods]] #mandatory
-modId="wdutils"
+[[mods]]
+modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
-displayURL="http://curseforge.com/minecraft/mc-mods/wds-utils"
-logoFile = "icon.png"
-mod_authors="${mod_authors}" #optional
-description='''A set of useful classes and systems for minecraft modders'''
+authors="wdiscute"
+description='''
+A set of useful classes and systems for minecraft modders
+'''
 
-# In neoforge.mods.toml:
-[[accessTransformers]]
-file="META-INF/accesstransformer.cfg"
+#[[mixins]]
+#config="${mod_id}.mixins.json"
 
-[[dependencies.wdutils]] #optional
-modId="neoforge" #mandatory
-type="required" #mandatory
-versionRange="${neo_version_range}" #mandatory
-ordering="AFTER"
+[[dependencies.${mod_id}]]
+modId="neoforge"
+type="required"
+versionRange="[${neo_version},)"
+ordering="NONE"
 side="BOTH"
 
-[[dependencies.wdutils]]
+[[dependencies.${mod_id}]]
 modId="minecraft"
 type="required"
 versionRange="${minecraft_version_range}"
-ordering="AFTER"
+ordering="NONE"
 side="BOTH"

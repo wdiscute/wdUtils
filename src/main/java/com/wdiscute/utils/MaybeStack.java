@@ -6,33 +6,31 @@ import com.mojang.serialization.Codec;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredItem;
 
-import java.util.Optional;
-
-public record MaybeStack(@DoNotCall @Deprecated ResourceLocation rl, @DoNotCall @Deprecated ItemStack stack)
+public record MaybeStack(@DoNotCall @Deprecated Identifier rl, @DoNotCall @Deprecated ItemStack stack)
 {
     public static final MaybeStack EMPTY = new MaybeStack(ItemStack.EMPTY);
 
-    public MaybeStack(ResourceLocation rl)
+    public MaybeStack(Identifier rl)
     {
         this(rl, ItemStack.EMPTY);
     }
 
     //if rl is registered, sets itemstack as the default instance
-    public static MaybeStack of(ResourceLocation rl)
+    public static MaybeStack of(Identifier rl)
     {
         return BuiltInRegistries.ITEM.getOptional(rl).map(item -> new MaybeStack(item.getDefaultInstance())).orElseGet(() -> new MaybeStack(rl));
     }
 
     public MaybeStack(String ns, String path)
     {
-        this(ResourceLocation.fromNamespaceAndPath(ns, path), ItemStack.EMPTY);
+        this(Identifier.fromNamespaceAndPath(ns, path), ItemStack.EMPTY);
     }
 
     public MaybeStack(DeferredItem<Item> item)
@@ -75,7 +73,7 @@ public record MaybeStack(@DoNotCall @Deprecated ResourceLocation rl, @DoNotCall 
 
     public static final Codec<MaybeStack> CODEC = Codec.either(
             ItemStack.CODEC,
-            ResourceLocation.CODEC
+            Identifier.CODEC
     ).xmap(
             either -> either.map(MaybeStack::new, MaybeStack::of),
             maybeStack -> !maybeStack.isEmpty()
@@ -86,7 +84,7 @@ public record MaybeStack(@DoNotCall @Deprecated ResourceLocation rl, @DoNotCall 
 
     public static final StreamCodec<RegistryFriendlyByteBuf, MaybeStack> STREAM_CODEC =
             StreamCodec.composite(
-                    ResourceLocation.STREAM_CODEC, MaybeStack::rl,
+                    Identifier.STREAM_CODEC, MaybeStack::rl,
                     ItemStack.OPTIONAL_STREAM_CODEC, MaybeStack::stack,
                     MaybeStack::new
             );

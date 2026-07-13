@@ -1,29 +1,29 @@
 package com.wdiscute.utils;
 
-import net.minecraft.Util;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
+import net.minecraft.util.Util;
 
 public class ScreenUtils
 {
-    public static void renderCenteredScrollingString(GuiGraphics guiGraphics, Font font, String text, int centerX, int minX, int maxX, int y, int color)
+    public static void renderCenteredScrollingString(GuiGraphicsExtractor guiGraphics, Font font, String text, int centerX, int minX, int maxX, int y, int color)
     {
         renderCenteredScrollingString(guiGraphics, font, Component.literal(text), centerX, minX, maxX, y, color, false);
     }
 
-    public static void renderCenteredScrollingString(GuiGraphics guiGraphics, Font font, Component text, int centerX, int minX, int maxX, int y, int color)
+    public static void renderCenteredScrollingString(GuiGraphicsExtractor guiGraphics, Font font, Component text, int centerX, int minX, int maxX, int y, int color)
     {
         renderCenteredScrollingString(guiGraphics, font, text, centerX, minX, maxX, y, color, false);
     }
 
-    public static void renderCenteredScrollingString(GuiGraphics guiGraphics, Font font, String text, int centerX, int minX, int maxX, int y, int color, boolean shadow)
+    public static void renderCenteredScrollingString(GuiGraphicsExtractor guiGraphics, Font font, String text, int centerX, int minX, int maxX, int y, int color, boolean shadow)
     {
         renderCenteredScrollingString(guiGraphics, font, Component.literal(text), centerX, minX, maxX, y, color, shadow);
     }
 
-    public static void renderCenteredScrollingString(GuiGraphics guiGraphics, Font font, Component text, int centerX, int minX, int maxX, int y, int color, boolean shadow)
+    public static void renderCenteredScrollingString(GuiGraphicsExtractor guiGraphics, Font font, Component text, int centerX, int minX, int maxX, int y, int color, boolean shadow)
     {
         int i = font.width(text);
         int k = maxX - minX;
@@ -36,22 +36,22 @@ public class ScreenUtils
             double d3 = Mth.lerp(d2, 0.0F, l);
             guiGraphics.enableScissor(minX, y - 10, maxX, y + 10);
             int x = minX - (int) d3;
-            guiGraphics.drawString(font, text, x, y, color, shadow);
+            guiGraphics.text(font, text, x, y, color, shadow);
             guiGraphics.disableScissor();
         }
         else
         {
             int i1 = Mth.clamp(centerX, minX + i / 2, maxX - i / 2);
-            guiGraphics.drawString(font, text.getVisualOrderText(), i1 - font.width(text.getVisualOrderText()) / 2, y, color, shadow);
+            guiGraphics.text(font, text.getVisualOrderText(), i1 - font.width(text.getVisualOrderText()) / 2, y, color, shadow);
         }
     }
 
-    public static void renderScrollingString(GuiGraphics guiGraphics, Font font, Component text, int minX, int maxX, int y, int color, boolean shadow)
+    public static void renderScrollingString(GuiGraphicsExtractor guiGraphics, Font font, Component text, int minX, int maxX, int y, int color, boolean shadow)
     {
         renderScrollingString(guiGraphics, font, text, minX, maxX, y, color, shadow, 300);
     }
 
-    public static void renderScrollingString(GuiGraphics guiGraphics, Font font, Component text, int minX, int maxX, int y, int color, boolean shadow, int scrollingSpeed)
+    public static void renderScrollingString(GuiGraphicsExtractor guiGraphics, Font font, Component text, int minX, int maxX, int y, int color, boolean shadow, int scrollingSpeed)
     {
         boolean hovering = true;
 
@@ -67,13 +67,13 @@ public class ScreenUtils
             guiGraphics.enableScissor(minX, y - 20, maxX, y + 20);
             int x = minX - (int) d3;
             if (!hovering) x = minX;
-            guiGraphics.drawString(font, text, x, y, color, shadow);
+            guiGraphics.text(font, text, x, y, color, shadow);
             guiGraphics.disableScissor();
         }
         else
         {
             int i1 = Mth.clamp(minX, minX + i / 2, maxX - i / 2);
-            guiGraphics.drawString(font, text.getVisualOrderText(), i1 - font.width(text.getVisualOrderText()) / 2, y, color, shadow);
+            guiGraphics.text(font, text.getVisualOrderText(), i1 - font.width(text.getVisualOrderText()) / 2, y, color, shadow);
         }
     }
 

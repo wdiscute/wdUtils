@@ -3,18 +3,15 @@ package com.wdiscute.utils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 
 import java.util.List;
-import java.util.Queue;
 import java.util.Random;
 
 @Mod(Utils.MOD_ID)
@@ -28,14 +25,14 @@ public class Utils
     {
     }
 
-    public static ResourceLocation rl(String ns, String path)
+    public static Identifier rl(String ns, String path)
     {
-        return ResourceLocation.fromNamespaceAndPath(ns, path);
+        return Identifier.fromNamespaceAndPath(ns, path);
     }
 
-    public static ResourceLocation rl(String path)
+    public static Identifier rl(String path)
     {
-        return ResourceLocation.fromNamespaceAndPath("minecraft", path);
+        return Identifier.fromNamespaceAndPath("minecraft", path);
     }
 
     @SafeVarargs
@@ -100,10 +97,10 @@ public class Utils
         return Holder.direct(entityType);
     }
 
-    public static Holder<EntityType<?>> holderEntity(String ns, String path)
-    {
-        return Holder.Reference.createStandAlone(BuiltInRegistries.ENTITY_TYPE.holderOwner(), ResourceKey.create(Registries.ENTITY_TYPE, rl(ns, path)));
-    }
+    //public static Holder<EntityType<?>> holderEntity(String ns, String path)
+    //{
+        //return Holder.Reference.createStandAlone(BuiltInRegistries.ENTITY_TYPE.holderOwner(), ResourceKey.create(Registries.ENTITY_TYPE, rl(ns, path)));
+    //}
 
     //0-255
     public static int intToRed(int packedColor)
@@ -228,9 +225,15 @@ public class Utils
     static class Events
     {
         @SubscribeEvent
-        public static void registerReloadListeners(AddReloadListenerEvent event)
+        public static void registerReloadListeners(AddServerReloadListenersEvent event)
         {
-            event.addListener(new DataEntry.DataEntryReloadListener());
+            event.addListener(rl("wdutils_data_entry_server"), new DataEntry.DataEntryReloadListener());
+        }
+
+        @SubscribeEvent
+        public static void registerReloadListeners(AddClientReloadListenersEvent event)
+        {
+            event.addListener(rl("wdutils_data_entry_client"), new DataEntry.DataEntryReloadListener());
         }
     }
 }
