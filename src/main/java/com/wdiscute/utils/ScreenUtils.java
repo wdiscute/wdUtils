@@ -44,6 +44,12 @@ public class ScreenUtils
             tooltip = new ArrayList<>(list);
         }
 
+        public static void set(Component comp)
+        {
+            tooltip = new ArrayList<>(){{add(comp);}};
+        }
+
+
         public static void addTranslatable(String string)
         {
             if (tooltip == null)
@@ -116,6 +122,7 @@ public class ScreenUtils
 
     /**
      * Sets a color to be used on the next render call
+     *
      * @since 4.0
      */
     public static void setColorF(float alpha, float red, float green, float blue)
@@ -295,6 +302,13 @@ public class ScreenUtils
         guiGraphics.drawString(font, text, x, y, color, shadow);
     }
 
+    public static void text(GuiGraphics guiGraphics, Font font, Component text, int x, int y, int color, boolean shadow, int sizeToScissor)
+    {
+        guiGraphics.enableScissor(x - 10, y - 10, x + sizeToScissor, y + 10);
+        guiGraphics.drawString(font, text, x, y, color, shadow);
+        guiGraphics.disableScissor();
+    }
+
     public static void text(GuiGraphics guiGraphics, Font font, Component text, int x, int y, int color)
     {
         guiGraphics.drawString(font, text, x, y, color, true);
@@ -368,8 +382,6 @@ public class ScreenUtils
 
     public static void renderScrollingString(GuiGraphics guiGraphics, Font font, Component text, int minX, int maxX, int y, int color, boolean shadow, int scrollingSpeed)
     {
-        boolean hovering = true;
-
         int i = font.width(text);
         int k = maxX - minX;
         if (i > k)
@@ -381,7 +393,6 @@ public class ScreenUtils
             double d3 = Mth.lerp(d2, 0.0F, l);
             guiGraphics.enableScissor(minX, y - 20, maxX, y + 20);
             int x = minX - (int) d3;
-            if (!hovering) x = minX;
             guiGraphics.drawString(font, text, x, y, color, shadow);
             guiGraphics.disableScissor();
         }
