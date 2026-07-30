@@ -15,7 +15,7 @@ public interface TickableBlockEntity
         tick(level, pos, state);
     }
 
-    default void tickClient(ClientLevel level, BlockPos pos, BlockState state)
+    default void tickClient(Level level, BlockPos pos, BlockState state)
     {
         tick(level, pos, state);
     }
@@ -31,7 +31,7 @@ public interface TickableBlockEntity
         {
             return (l, bp, bs, be) ->
             {
-                if (be instanceof TickableBlockEntity tbe) tbe.tickClient((ClientLevel) level, bp, bs);
+                if (be instanceof TickableBlockEntity tbe) tbe.tickClient(level, bp, bs);
             };
         }
         else

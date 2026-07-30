@@ -8,4 +8,9 @@ public class BasicItem extends Item
     {
         super(new Item.Properties());
     }
+
+    public BasicItem(Item.Properties properties)
+    {
+        super(properties);
+    }
 }

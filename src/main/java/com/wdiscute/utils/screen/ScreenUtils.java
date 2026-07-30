@@ -1,10 +1,15 @@
-package com.wdiscute.utils;
+package com.wdiscute.utils.screen;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.item.TrackingItemStackRenderState;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Util;
+import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
 
 public class ScreenUtils
 {
@@ -77,5 +82,19 @@ public class ScreenUtils
         }
     }
 
+    public static void renderItem(GuiGraphicsExtractor guiGraphics, ItemStack stack, float rotY, float rotX, float rotZ, int xOffset, int yOffset, float scale)
+    {
+        LocalPlayer player = Minecraft.getInstance().player;
+        if(player == null) return;
+
+        TrackingItemStackRenderState renderState = new TrackingItemStackRenderState();
+
+        Minecraft.getInstance().getItemModelResolver().updateForTopItem(renderState, stack,
+                ItemDisplayContext.FIXED, player.level(), player, 0);
+
+        guiGraphics.submitPictureInPictureRenderState(new ItemStackPictureInPictureRenderer.RenderState(
+                renderState, rotY, rotX, rotZ,
+                xOffset, yOffset, 16 * scale));
+    }
 
 }
