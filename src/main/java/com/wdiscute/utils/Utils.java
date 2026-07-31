@@ -99,7 +99,7 @@ public class Utils
 
     //public static Holder<EntityType<?>> holderEntity(String ns, String path)
     //{
-        //return Holder.Reference.createStandAlone(BuiltInRegistries.ENTITY_TYPE.holderOwner(), ResourceKey.create(Registries.ENTITY_TYPE, rl(ns, path)));
+        //return Holder.Reference.createStandAlone(BuiltInRegistries.ENTITY_TYPE.holderOwner(), ResourceKey.create(Registries.ENTITY_TYPE, identifier(ns, path)));
     //}
 
     //0-255
