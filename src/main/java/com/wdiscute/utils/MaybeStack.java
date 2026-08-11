@@ -16,7 +16,7 @@ import net.neoforged.neoforge.registries.DeferredItem;
 
 public record MaybeStack(Identifier identifier, int count, DataComponentPatch patch)
 {
-    public static final MaybeStack EMPTY = new MaybeStack(ItemStack.EMPTY);
+    public static final MaybeStack EMPTY = new MaybeStack(Items.AIR);
 
     public MaybeStack(Identifier rl)
     {
@@ -26,6 +26,11 @@ public record MaybeStack(Identifier identifier, int count, DataComponentPatch pa
     public MaybeStack(Identifier rl, int count)
     {
         this(rl, count, DataComponentPatch.EMPTY);
+    }
+
+    public MaybeStack(Item item, int count)
+    {
+        this(BuiltInRegistries.ITEM.getKey(item), count, DataComponentPatch.EMPTY);
     }
 
     //if identifier is registered, sets itemstack as the default instance
@@ -66,9 +71,13 @@ public record MaybeStack(Identifier identifier, int count, DataComponentPatch pa
 
     public ItemStack toStack()
     {
-        return BuiltInRegistries.ITEM.getOptional(identifier)
+        ItemStack stack = BuiltInRegistries.ITEM.getOptional(identifier)
                 .map(ItemStack::new)
                 .orElse(ItemStack.EMPTY);
+
+        stack.setCount(count);
+        stack.applyComponents(patch);
+        return stack;
     }
 
     public Item toItem()
@@ -81,7 +90,6 @@ public record MaybeStack(Identifier identifier, int count, DataComponentPatch pa
             Codec.INT.fieldOf("count").forGetter(MaybeStack::count),
             DataComponentPatch.CODEC.fieldOf("data_components_patch").forGetter(MaybeStack::patch)
     ).apply(instance, MaybeStack::new));
-
 
     public static final StreamCodec<RegistryFriendlyByteBuf, MaybeStack> STREAM_CODEC =
             StreamCodec.composite(

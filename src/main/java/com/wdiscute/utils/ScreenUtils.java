@@ -1,7 +1,5 @@
-package com.wdiscute.utils.screen;
+package com.wdiscute.utils;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.wdiscute.utils.compat.EmiCompat;
 import com.wdiscute.utils.compat.JeiCompat;
 import net.minecraft.client.Minecraft;
@@ -177,7 +175,7 @@ public class ScreenUtils
             guiGraphics.blit(RenderPipelines.GUI_TEXTURED, rl,
                     0, 0,
                     textureWidth, textureHeight,
-                    0, 0,
+                    textureWidth, textureHeight,
                     textureWidth, textureHeight,
                     textureWidth, textureHeight
             );
@@ -192,7 +190,7 @@ public class ScreenUtils
             guiGraphics.blit(RenderPipelines.GUI_TEXTURED, rl,
                     x, y,
                     textureWidth, textureHeight,
-                    0, 0,
+                    textureWidth, textureHeight,
                     textureWidth, textureHeight,
                     textureWidth, textureHeight
             );
@@ -221,8 +219,8 @@ public class ScreenUtils
 
             guiGraphics.blit(RenderPipelines.GUI_TEXTURED, rl,
                     x, y,
-                    sectionWidth, sectionHeight,
                     xOffset, yOffset,
+                    sectionWidth, sectionHeight,
                     sectionWidth, sectionHeight,
                     textureWidth, textureHeight
             );

@@ -1,4 +1,4 @@
-package com.wdiscute.utils.screen;
+package com.wdiscute.utils;
 
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.vertex.PoseStack;

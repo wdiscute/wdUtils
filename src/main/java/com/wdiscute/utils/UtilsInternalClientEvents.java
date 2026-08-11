@@ -1,6 +1,5 @@
 package com.wdiscute.utils;
 
-import com.wdiscute.utils.screen.ItemStackPictureInPictureRenderer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
