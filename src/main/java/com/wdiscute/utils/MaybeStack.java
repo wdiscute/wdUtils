@@ -87,8 +87,8 @@ public record MaybeStack(Identifier identifier, int count, DataComponentPatch pa
 
     public static final Codec<MaybeStack> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Identifier.CODEC.fieldOf("identifier").forGetter(MaybeStack::identifier),
-            Codec.INT.fieldOf("count").forGetter(MaybeStack::count),
-            DataComponentPatch.CODEC.fieldOf("data_components_patch").forGetter(MaybeStack::patch)
+            Codec.INT.optionalFieldOf("count", 1).forGetter(MaybeStack::count),
+            DataComponentPatch.CODEC.optionalFieldOf("data_components_patch", DataComponentPatch.EMPTY).forGetter(MaybeStack::patch)
     ).apply(instance, MaybeStack::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, MaybeStack> STREAM_CODEC =
