@@ -34,15 +34,15 @@ dependencies {
 }
 
 publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            artifactId = base.archivesName.get()
-            from components.java
+    repositories {
+        maven {
+            url = "$rootDir/build/maven"
         }
     }
-
-    repositories {
-        mavenLocal()
+    publications {
+        gpr(MavenPublication) {
+            from(components.java)
+        }
     }
 }
 
