@@ -13,9 +13,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 
-import java.util.List;
-import java.util.Queue;
-import java.util.Random;
+import java.util.*;
 
 @Mod(Utils.MOD_ID)
 public class Utils
@@ -105,19 +103,36 @@ public class Utils
         return Holder.Reference.createStandAlone(BuiltInRegistries.ENTITY_TYPE.holderOwner(), ResourceKey.create(Registries.ENTITY_TYPE, rl(ns, path)));
     }
 
-    //0-255
+    //0-1
+    public static int toColorF(float red, float green, float blue, float alpha)
+    {
+        int r = Math.round(red * 255);
+        int g = Math.round(green * 255);
+        int b = Math.round(blue * 255);
+        int a = Math.round(alpha * 255);
+
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    //0-1
+    public static int toColorI(int red, int green, int blue, int alpha)
+    {
+        return (alpha << 24) | (red << 16) | (green << 8) | blue;
+    }
+
+    //0x00ff0000 -> returns 0-255
     public static int intToRed(int packedColor)
     {
         return packedColor >> 16 & 255;
     }
 
-    //0-255
+    //0x0000ff00 -> returns 0-255
     public static int intToGreen(int packedColor)
     {
         return packedColor >> 8 & 255;
     }
 
-    //0-255
+    //0x000000ff -> returns 0-255
     public static int intToBlue(int packedColor)
     {
         return packedColor & 255;
@@ -181,7 +196,7 @@ public class Utils
                 Codec<F> firstCodec, String firstName,
                 Codec<S> secondCodec, String secondName,
                 Codec<T> thirdCodec, String thirdName
-                )
+        )
         {
             return RecordCodecBuilder.create(instance -> instance.group(
                     firstCodec.fieldOf(firstName).forGetter(Trio::first),
