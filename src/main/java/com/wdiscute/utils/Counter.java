@@ -7,6 +7,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.Identifier;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,6 +55,22 @@ public class Counter<T>
         return map.getOrDefault(entry, 0);
     }
 
+    public int mostCommon()
+    {
+        return map.values().stream()
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
+    }
+
+    public int leastCommon()
+    {
+        return map.values().stream()
+                .mapToInt(Integer::intValue)
+                .min()
+                .orElse(0);
+    }
+
     public static <T> Codec<Counter<T>> codec(Codec<T> codec, String name)
     {
         return RecordCodecBuilder.create(instance ->
@@ -65,34 +82,19 @@ public class Counter<T>
         );
     }
 
+    public Map<T, Integer> toMap()
+    {
+        return Collections.unmodifiableMap(map);
+    }
+
     public static <T> Codec<Counter<T>> codec(Codec<T> codec)
     {
         return codec(codec, "counter");
     }
 
-    public static <T> StreamCodec<ByteBuf, Counter<T>> streamCodec(StreamCodec<ByteBuf, T> codec)
+    public static <T, B extends ByteBuf> StreamCodec<B, Counter<T>> streamCodec(StreamCodec<B, T> codec)
     {
-        StreamCodec<ByteBuf, Map<T, Integer>> mapCodec = ByteBufCodecs.map(
-                HashMap::new, codec,
-                ByteBufCodecs.VAR_INT
-        );
-
-        return mapCodec.map(Counter::new, counter -> counter.map);
-    }
-
-    public static <T> StreamCodec<FriendlyByteBuf, Counter<T>> streamCodecFriendly(StreamCodec<FriendlyByteBuf, T> codec)
-    {
-        StreamCodec<FriendlyByteBuf, Map<T, Integer>> mapCodec = ByteBufCodecs.map(
-                HashMap::new, codec,
-                ByteBufCodecs.VAR_INT
-        );
-
-        return mapCodec.map(Counter::new, counter -> counter.map);
-    }
-
-    public static <T> StreamCodec<RegistryFriendlyByteBuf, Counter<T>> streamCodecRegistryFriendly(StreamCodec<RegistryFriendlyByteBuf, T> codec)
-    {
-        StreamCodec<RegistryFriendlyByteBuf, Map<T, Integer>> mapCodec = ByteBufCodecs.map(
+        StreamCodec<B, Map<T, Integer>> mapCodec = ByteBufCodecs.map(
                 HashMap::new, codec,
                 ByteBufCodecs.VAR_INT
         );
