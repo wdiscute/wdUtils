@@ -14,23 +14,23 @@ import java.util.Optional;
 
 public sealed interface EntryOrTag<T>
 {
-    default String getTranslation()
+    default String getTranslation(String prefix)
     {
         if (this instanceof Entry<T>(ResourceKey<T> key))
-            return "biome." + key.location().toLanguageKey();
+            return prefix + "." + key.location().toLanguageKey();
         if (this instanceof Tag<T>(TagKey<T> tag))
             return "tag." + tag.location().toLanguageKey();
         return "uuuuhhh something went wrong! Oops...";
     }
 
-    boolean matches(Holder<T> biome, Registry<T> registry);
+    boolean matches(Holder<T> entry, Registry<T> registry);
 
     record Entry<T>(ResourceKey<T> key) implements EntryOrTag<T>
     {
         @Override
-        public boolean matches(Holder<T> biome, Registry<T> registry)
+        public boolean matches(Holder<T> entry, Registry<T> registry)
         {
-            ResourceKey<T> rk = biome.getKey();
+            ResourceKey<T> rk = entry.getKey();
 
             if(rk == null) return false;
 
@@ -41,11 +41,11 @@ public sealed interface EntryOrTag<T>
     record Tag<T>(TagKey<T> tag) implements EntryOrTag<T>
     {
         @Override
-        public boolean matches(Holder<T> biome, Registry<T> registry)
+        public boolean matches(Holder<T> entry, Registry<T> registry)
         {
             Optional<HolderSet.Named<T>> set = registry.getTag(tag);
 
-            return set.map(holders -> holders.contains(biome)).orElse(false);
+            return set.map(holders -> holders.contains(entry)).orElse(false);
         }
     }
 

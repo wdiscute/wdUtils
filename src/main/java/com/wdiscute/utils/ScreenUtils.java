@@ -2,12 +2,17 @@ package com.wdiscute.utils;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.wdiscute.utils.compat.EmiCompat;
 import com.wdiscute.utils.compat.JeiCompat;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.Util;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
@@ -45,9 +50,11 @@ public class ScreenUtils
 
         public static void set(Component comp)
         {
-            tooltip = new ArrayList<>(){{add(comp);}};
+            tooltip = new ArrayList<>()
+            {{
+                add(comp);
+            }};
         }
-
 
         public static void addTranslatable(String string)
         {
@@ -114,24 +121,31 @@ public class ScreenUtils
 
     private static int color = -1;
 
+    // 0-255
+    public static void setAlpha(int alpha)
+    {
+        color = (color & 0x00FFFFFF) | ((Math.clamp(alpha, 0, 255) & 0xFF) << 24);
+    }
+
+    // 0-1
+    public static void setAlphaF(float alpha)
+    {
+        setAlpha((int)(Math.clamp(alpha, 0, 1) * 255.0f));
+    }
+
     public static void setColor(int color)
     {
         ScreenUtils.color = color;
     }
 
-    /**
-     * Sets a color to be used on the next render call
-     *
-     * @since 4.0
-     */
     public static void setColorF(float alpha, float red, float green, float blue)
     {
-
+        ScreenUtils.color = Utils.toColorF(red, green, blue, alpha);
     }
 
     public static void setColorI(int alpha, int red, int green, int blue)
     {
-
+        ScreenUtils.color = Utils.toColorI(red, green, blue, alpha);
     }
 
     public static void resetColor()
@@ -161,13 +175,42 @@ public class ScreenUtils
     //                          `---'
     // just like the famous synth pop album Image by Magdalena Bay
     // feeling disk inserted yet?
-    public record Image(ResourceLocation rl, int textureWidth, int textureHeight)
+    public record Image(ResourceLocation id, int textureWidth, int textureHeight)
     {
+        public static final Codec<Image> CODEC = RecordCodecBuilder.create(instance ->
+                instance.group(
+                        ResourceLocation.CODEC.fieldOf("identifier").forGetter(Image::id),
+                        Codec.INT.fieldOf("texture_width").forGetter(Image::textureWidth),
+                        Codec.INT.fieldOf("texture_height").forGetter(Image::textureHeight)
+                ).apply(instance, Image::new));
+
+        public static Codec<Image> codecFixedSize(int textureWidth, int textureHeight)
+        {
+            return ResourceLocation.CODEC.xmap(
+                    id -> new Image(id, textureWidth, textureHeight),
+                    Image::id
+            );
+        }
+
+        public static StreamCodec<ByteBuf, Image> streamCodecFixedSize(int textureWidth, int textureHeight)
+        {
+            return StreamCodec.composite(
+                    ResourceLocation.STREAM_CODEC, Image::id,
+                    (o) -> new Image(o, textureWidth, textureHeight));
+        }
+
+        public static final StreamCodec<ByteBuf, Image> STREAM_CODEC = StreamCodec.composite(
+                ResourceLocation.STREAM_CODEC, Image::id,
+                ByteBufCodecs.INT, Image::textureWidth,
+                ByteBufCodecs.INT, Image::textureHeight,
+                Image::new
+        );
+
         public void render(GuiGraphics guiGraphics)
         {
             if (color != -1) setColorInternal();
 
-            guiGraphics.blit(rl,
+            guiGraphics.blit(id,
                     0, 0,
                     textureWidth, textureHeight,
                     0, 0,
@@ -182,8 +225,38 @@ public class ScreenUtils
         {
             if (color != -1) setColorInternal();
 
-            guiGraphics.blit(rl,
+            guiGraphics.blit(id,
                     x, y,
+                    textureWidth, textureHeight,
+                    0, 0,
+                    textureWidth, textureHeight,
+                    textureWidth, textureHeight
+            );
+
+            resetColor();
+        }
+
+        public void renderCentered(GuiGraphics guiGraphics, int x, int y)
+        {
+            if (color != -1) setColorInternal();
+
+            guiGraphics.blit(id,
+                    x - textureWidth / 2, y - textureHeight / 2,
+                    textureWidth, textureHeight,
+                    0, 0,
+                    textureWidth, textureHeight,
+                    textureWidth, textureHeight
+            );
+
+            resetColor();
+        }
+
+        public void renderCentered(GuiGraphics guiGraphics)
+        {
+            if (color != -1) setColorInternal();
+
+            guiGraphics.blit(id,
+                    textureWidth / 2, textureHeight / 2,
                     textureWidth, textureHeight,
                     0, 0,
                     textureWidth, textureHeight,
@@ -197,7 +270,7 @@ public class ScreenUtils
         {
             if (color != -1) setColorInternal();
 
-            guiGraphics.blit(rl,
+            guiGraphics.blit(id,
                     x, y,
                     (int) (textureWidth * scale), (int) (textureHeight * scale),
                     0, 0,
@@ -208,11 +281,11 @@ public class ScreenUtils
             resetColor();
         }
 
-        public void render(GuiGraphics guiGraphics, int x, int y, int xOffset, int yOffset, int sectionWidth, int sectionHeight)
+        public void render(GuiGraphics guiGraphics, int x, int y, float xOffset, float yOffset, int sectionWidth, int sectionHeight)
         {
             if (color != -1) setColorInternal();
 
-            guiGraphics.blit(rl,
+            guiGraphics.blit(id,
                     x, y,
                     sectionWidth, sectionHeight,
                     xOffset, yOffset,
@@ -227,7 +300,7 @@ public class ScreenUtils
         {
             if (color != -1) setColorInternal();
 
-            guiGraphics.blit(rl,
+            guiGraphics.blit(id,
                     0, 0,
                     0, 0,
                     0, 0,
@@ -269,7 +342,7 @@ public class ScreenUtils
     {
         poseStack.pushPose();
         poseStack.translate(x - 8, y - 8, 0);
-        poseStack.scale(scale, scale, scale);
+        poseStack.scale(scale, scale, 1);
         guiGraphics.renderItem(itemStack, 0, 0);
         poseStack.popPose();
     }
@@ -323,7 +396,6 @@ public class ScreenUtils
         guiGraphics.drawString(font, text, x, y, color, true);
     }
 
-
     //
     //                               ,--. ,--. ,--.
     // ,---.   ,---. ,--.--.  ,---.  |  | |  | `--' ,--,--,   ,---.
@@ -336,22 +408,13 @@ public class ScreenUtils
     //  |  |   \   --.  /  /.  \    |  |
     //  `--'    `----' '--'  '--'   `--'
     //
-    public static void renderCenteredScrollingString(GuiGraphics guiGraphics, Font font, String text, int centerX, int minX, int maxX, int y, int color)
+
+    public static void centeredScrollingText(GuiGraphics guiGraphics, Font font, String text, int centerX, int minX, int maxX, int y, int color, boolean shadow)
     {
-        renderCenteredScrollingString(guiGraphics, font, Component.literal(text), centerX, minX, maxX, y, color, false);
+        centeredScrollingText(guiGraphics, font, Component.literal(text), centerX, minX, maxX, y, color, shadow);
     }
 
-    public static void renderCenteredScrollingString(GuiGraphics guiGraphics, Font font, Component text, int centerX, int minX, int maxX, int y, int color)
-    {
-        renderCenteredScrollingString(guiGraphics, font, text, centerX, minX, maxX, y, color, false);
-    }
-
-    public static void renderCenteredScrollingString(GuiGraphics guiGraphics, Font font, String text, int centerX, int minX, int maxX, int y, int color, boolean shadow)
-    {
-        renderCenteredScrollingString(guiGraphics, font, Component.literal(text), centerX, minX, maxX, y, color, shadow);
-    }
-
-    public static void renderCenteredScrollingString(GuiGraphics guiGraphics, Font font, Component text, int centerX, int minX, int maxX, int y, int color, boolean shadow)
+    public static void centeredScrollingText(GuiGraphics guiGraphics, Font font, Component text, int centerX, int minX, int maxX, int y, int color, boolean shadow)
     {
         int i = font.width(text);
         int k = maxX - minX;
@@ -374,12 +437,12 @@ public class ScreenUtils
         }
     }
 
-    public static void renderScrollingString(GuiGraphics guiGraphics, Font font, Component text, int minX, int maxX, int y, int color, boolean shadow)
+    public static void scrollingText(GuiGraphics guiGraphics, Font font, Component text, int minX, int maxX, int y, int color, boolean shadow)
     {
-        renderScrollingString(guiGraphics, font, text, minX, maxX, y, color, shadow, 300);
+        scrollingText(guiGraphics, font, text, minX, maxX, y, color, shadow, 300);
     }
 
-    public static void renderScrollingString(GuiGraphics guiGraphics, Font font, Component text, int minX, int maxX, int y, int color, boolean shadow, int scrollingSpeed)
+    public static void scrollingText(GuiGraphics guiGraphics, Font font, Component text, int minX, int maxX, int y, int color, boolean shadow, int scrollingSpeed)
     {
         int i = font.width(text);
         int k = maxX - minX;

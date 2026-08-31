@@ -26,7 +26,7 @@ repositories {
 dependencies {
     //EMI
     compileOnly "dev.emi:emi-neoforge:1.1.22+1.21.1:api"
-    runtimeOnly "dev.emi:emi-neoforge:1.1.22+1.21.1"
+    //runtimeOnly "dev.emi:emi-neoforge:1.1.22+1.21.1"
 
     //JEI
     compileOnly "mezz.jei:jei-${mc_version}-neoforge:19.27.0.340"

@@ -106,10 +106,10 @@ public class Utils
     //0-1
     public static int toColorF(float red, float green, float blue, float alpha)
     {
-        int r = Math.round(red * 255);
-        int g = Math.round(green * 255);
-        int b = Math.round(blue * 255);
-        int a = Math.round(alpha * 255);
+        int r = Math.round(Math.clamp(red, 0, 1) * 255);
+        int g = Math.round(Math.clamp(green, 0, 1) * 255);
+        int b = Math.round(Math.clamp(blue, 0, 1) * 255);
+        int a = Math.round(Math.clamp(alpha, 0, 1) * 255);
 
         return (a << 24) | (r << 16) | (g << 8) | b;
     }
@@ -117,7 +117,7 @@ public class Utils
     //0-1
     public static int toColorI(int red, int green, int blue, int alpha)
     {
-        return (alpha << 24) | (red << 16) | (green << 8) | blue;
+        return (Math.clamp(alpha, 0, 255) << 24) | (Math.clamp(red, 0, 255) << 16) | (Math.clamp(green, 0, 255) << 8) | Math.clamp(blue, 0, 255);
     }
 
     //0x00ff0000 -> returns 0-255
