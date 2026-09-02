@@ -1,7 +1,10 @@
 package com.wdiscute.utils;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.wdiscute.utils.compat.EmiCompat;
 import com.wdiscute.utils.compat.JeiCompat;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -9,6 +12,8 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.item.TrackingItemStackRenderState;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
@@ -166,13 +171,42 @@ public class ScreenUtils
     //                          `---'
     // just like the famous synth pop album Image by Magdalena Bay
     // feeling disk inserted yet?
-    public record Image(Identifier rl, int textureWidth, int textureHeight)
+    public record Image(Identifier id, int textureWidth, int textureHeight)
     {
+        public static final Codec<Image> CODEC = RecordCodecBuilder.create(instance ->
+                instance.group(
+                        Identifier.CODEC.fieldOf("identifier").forGetter(Image::id),
+                        Codec.INT.fieldOf("texture_width").forGetter(Image::textureWidth),
+                        Codec.INT.fieldOf("texture_height").forGetter(Image::textureHeight)
+                ).apply(instance, Image::new));
+
+        public static Codec<Image> codecFixedSize(int textureWidth, int textureHeight)
+        {
+            return Identifier.CODEC.xmap(
+                    id -> new Image(id, textureWidth, textureHeight),
+                    Image::id
+            );
+        }
+
+        public static StreamCodec<ByteBuf, Image> streamCodecFixedSize(int textureWidth, int textureHeight)
+        {
+            return StreamCodec.composite(
+                    Identifier.STREAM_CODEC, Image::id,
+                    (o) -> new Image(o, textureWidth, textureHeight));
+        }
+
+        public static final StreamCodec<ByteBuf, Image> STREAM_CODEC = StreamCodec.composite(
+                Identifier.STREAM_CODEC, Image::id,
+                ByteBufCodecs.INT, Image::textureWidth,
+                ByteBufCodecs.INT, Image::textureHeight,
+                Image::new
+        );
+
         public void render(GuiGraphicsExtractor guiGraphics)
         {
             if (color != -1) setColorInternal();
 
-            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, rl,
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, id,
                     0, 0,
                     textureWidth, textureHeight,
                     textureWidth, textureHeight,
@@ -187,7 +221,7 @@ public class ScreenUtils
         {
             if (color != -1) setColorInternal();
 
-            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, rl,
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, id,
                     x, y,
                     textureWidth, textureHeight,
                     textureWidth, textureHeight,
@@ -202,7 +236,7 @@ public class ScreenUtils
         {
             if (color != -1) setColorInternal();
 
-            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, rl,
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, id,
                     x, y,
                     (int) (textureWidth * scale), (int) (textureHeight * scale),
                     0, 0,
@@ -217,7 +251,7 @@ public class ScreenUtils
         {
             if (color != -1) setColorInternal();
 
-            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, rl,
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, id,
                     x, y,
                     xOffset, yOffset,
                     sectionWidth, sectionHeight,
@@ -232,7 +266,7 @@ public class ScreenUtils
         {
             if (color != -1) setColorInternal();
 
-            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, rl,
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, id,
                     0, 0,
                     0, 0,
                     0, 0,
