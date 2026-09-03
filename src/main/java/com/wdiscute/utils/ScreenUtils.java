@@ -123,43 +123,36 @@ public class ScreenUtils
 
     private static int color = -1;
 
+    // 0-255
+    public static void setAlpha(int alpha)
+    {
+        color = (color & 0x00FFFFFF) | ((Math.clamp(alpha, 0, 255) & 0xFF) << 24);
+    }
+
+    // 0-1
+    public static void setAlphaF(float alpha)
+    {
+        setAlpha((int)(Math.clamp(alpha, 0, 1) * 255.0f));
+    }
+
     public static void setColor(int color)
     {
         ScreenUtils.color = color;
     }
 
-    /**
-     * Sets a color to be used on the next render call
-     *
-     * @since 4.0
-     */
     public static void setColorF(float alpha, float red, float green, float blue)
     {
-
+        ScreenUtils.color = Utils.toColorF(red, green, blue, alpha);
     }
 
     public static void setColorI(int alpha, int red, int green, int blue)
     {
-
+        ScreenUtils.color = Utils.toColorI(red, green, blue, alpha);
     }
 
     public static void resetColor()
     {
         ScreenUtils.color = -1;
-        //RenderSystem.setShaderColor(1, 1, 1, 1);
-        //RenderSystem.disableBlend();
-    }
-
-    private static void setColorInternal()
-    {
-        //todo color stuff for rendering images
-        //RenderSystem.enableBlend();
-        //RenderSystem.setShaderColor(
-        //        ((color >> 16) & 0xFF) / 255.0f,
-        //        ((color >> 8) & 0xFF) / 255.0f,
-        //        (color & 0xFF) / 255.0f,
-        //        ((color >> 24) & 0xFF) / 255.0f
-        //);
     }
 
     //
@@ -204,14 +197,13 @@ public class ScreenUtils
 
         public void render(GuiGraphicsExtractor guiGraphics)
         {
-            if (color != -1) setColorInternal();
-
             guiGraphics.blit(RenderPipelines.GUI_TEXTURED, id,
                     0, 0,
                     textureWidth, textureHeight,
                     textureWidth, textureHeight,
                     textureWidth, textureHeight,
-                    textureWidth, textureHeight
+                    textureWidth, textureHeight,
+                    color
             );
 
             resetColor();
@@ -219,14 +211,13 @@ public class ScreenUtils
 
         public void render(GuiGraphicsExtractor guiGraphics, int x, int y)
         {
-            if (color != -1) setColorInternal();
-
             guiGraphics.blit(RenderPipelines.GUI_TEXTURED, id,
                     x, y,
                     textureWidth, textureHeight,
                     textureWidth, textureHeight,
                     textureWidth, textureHeight,
-                    textureWidth, textureHeight
+                    textureWidth, textureHeight,
+                    color
             );
 
             resetColor();
@@ -234,61 +225,42 @@ public class ScreenUtils
 
         public void render(GuiGraphicsExtractor guiGraphics, int x, int y, float scale)
         {
-            if (color != -1) setColorInternal();
-
             guiGraphics.blit(RenderPipelines.GUI_TEXTURED, id,
                     x, y,
                     (int) (textureWidth * scale), (int) (textureHeight * scale),
                     0, 0,
                     textureWidth, textureHeight,
-                    textureWidth, textureHeight
+                    textureWidth, textureHeight,
+                    color
             );
 
             resetColor();
         }
 
-        public void render(GuiGraphicsExtractor guiGraphics, int x, int y, int xOffset, int yOffset, int sectionWidth, int sectionHeight)
+        public void render(GuiGraphicsExtractor guiGraphics, int x, int y, float xOffset, float yOffset, int sectionWidth, int sectionHeight)
         {
-            if (color != -1) setColorInternal();
-
             guiGraphics.blit(RenderPipelines.GUI_TEXTURED, id,
                     x, y,
                     xOffset, yOffset,
                     sectionWidth, sectionHeight,
                     sectionWidth, sectionHeight,
-                    textureWidth, textureHeight
-            );
-
-            resetColor();
-        }
-
-        private void renderColor(GuiGraphicsExtractor guiGraphics, int color)
-        {
-            if (color != -1) setColorInternal();
-
-            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, id,
-                    0, 0,
-                    0, 0,
-                    0, 0,
-                    0, 0,
-                    0, 0
+                    textureWidth, textureHeight,
+                    color
             );
 
             resetColor();
         }
     }
 
-    public static void image(GuiGraphicsExtractor guiGraphics, Identifier rl, int x, int y, int xOffset, int yOffset, int textureWidth, int textureHeight)
+    public static void image(GuiGraphicsExtractor guiGraphics, Identifier rl, int x, int y, float xOffset, float yOffset, int textureWidth, int textureHeight)
     {
-        if (color != -1) setColorInternal();
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, rl, x, y, xOffset, yOffset, textureWidth, textureHeight, textureWidth, textureHeight);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, rl, x, y, xOffset, yOffset, textureWidth, textureHeight, textureWidth, textureHeight, color);
         resetColor();
     }
 
     public static void image(GuiGraphicsExtractor guiGraphics, Identifier rl, int x, int y, int textureWidth, int textureHeight)
     {
-        if (color != -1) setColorInternal();
-        guiGraphics.blit(rl, x, y, 0, 0, textureWidth, textureHeight, textureWidth, textureHeight);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, rl, x, y, 0, 0, textureWidth, textureHeight, textureWidth, textureHeight, color);
         resetColor();
     }
 
@@ -375,22 +347,22 @@ public class ScreenUtils
     //  |  |   \   --.  /  /.  \    |  |
     //  `--'    `----' '--'  '--'   `--'
     //
-    public static void renderCenteredScrollingString(GuiGraphicsExtractor guiGraphics, Font font, String text, int centerX, int minX, int maxX, int y, int color)
+    public static void centeredScrollingText(GuiGraphicsExtractor guiGraphics, Font font, String text, int centerX, int minX, int maxX, int y, int color)
     {
-        renderCenteredScrollingString(guiGraphics, font, Component.literal(text), centerX, minX, maxX, y, color, false);
+        centeredScrollingText(guiGraphics, font, Component.literal(text), centerX, minX, maxX, y, color, false);
     }
 
-    public static void renderCenteredScrollingString(GuiGraphicsExtractor guiGraphics, Font font, Component text, int centerX, int minX, int maxX, int y, int color)
+    public static void centeredScrollingText(GuiGraphicsExtractor guiGraphics, Font font, Component text, int centerX, int minX, int maxX, int y, int color)
     {
-        renderCenteredScrollingString(guiGraphics, font, text, centerX, minX, maxX, y, color, false);
+        centeredScrollingText(guiGraphics, font, text, centerX, minX, maxX, y, color, false);
     }
 
-    public static void renderCenteredScrollingString(GuiGraphicsExtractor guiGraphics, Font font, String text, int centerX, int minX, int maxX, int y, int color, boolean shadow)
+    public static void centeredScrollingText(GuiGraphicsExtractor guiGraphics, Font font, String text, int centerX, int minX, int maxX, int y, int color, boolean shadow)
     {
-        renderCenteredScrollingString(guiGraphics, font, Component.literal(text), centerX, minX, maxX, y, color, shadow);
+        centeredScrollingText(guiGraphics, font, Component.literal(text), centerX, minX, maxX, y, color, shadow);
     }
 
-    public static void renderCenteredScrollingString(GuiGraphicsExtractor guiGraphics, Font font, Component text, int centerX, int minX, int maxX, int y, int color, boolean shadow)
+    public static void centeredScrollingText(GuiGraphicsExtractor guiGraphics, Font font, Component text, int centerX, int minX, int maxX, int y, int color, boolean shadow)
     {
         int i = font.width(text);
         int k = maxX - minX;
@@ -413,12 +385,12 @@ public class ScreenUtils
         }
     }
 
-    public static void renderScrollingString(GuiGraphicsExtractor guiGraphics, Font font, Component text, int minX, int maxX, int y, int color, boolean shadow)
+    public static void scrollingText(GuiGraphicsExtractor guiGraphics, Font font, Component text, int minX, int maxX, int y, int color, boolean shadow)
     {
-        renderScrollingString(guiGraphics, font, text, minX, maxX, y, color, shadow, 300);
+        scrollingText(guiGraphics, font, text, minX, maxX, y, color, shadow, 300);
     }
 
-    public static void renderScrollingString(GuiGraphicsExtractor guiGraphics, Font font, Component text, int minX, int maxX, int y, int color, boolean shadow, int scrollingSpeed)
+    public static void scrollingText(GuiGraphicsExtractor guiGraphics, Font font, Component text, int minX, int maxX, int y, int color, boolean shadow, int scrollingSpeed)
     {
         int i = font.width(text);
         int k = maxX - minX;

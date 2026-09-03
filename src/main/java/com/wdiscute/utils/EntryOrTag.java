@@ -13,10 +13,10 @@ import java.util.Optional;
 
 public sealed interface EntryOrTag<T>
 {
-    default String getTranslation()
+    default String getTranslation(String name)
     {
         if (this instanceof Entry<T>(ResourceKey<T> key))
-            return "biome." + key.identifier().toLanguageKey();
+            return name + "." + key.identifier().toLanguageKey();
         if (this instanceof Tag<T>(TagKey<T> tag))
             return "tag." + tag.location().toLanguageKey();
         return "uuuuhhh something went wrong! Oops...";
@@ -31,7 +31,7 @@ public sealed interface EntryOrTag<T>
         {
             ResourceKey<T> rk = biome.getKey();
 
-            if(rk == null) return false;
+            if (rk == null) return false;
 
             return rk.equals(key);
         }

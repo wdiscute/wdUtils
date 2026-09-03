@@ -48,7 +48,7 @@ repositories {
 dependencies {
     //JEI
     compileOnly "mezz.jei:jei-26.1.2-neoforge:29.5.0.26"
-    runtimeOnly "mezz.jei:jei-26.1.2-neoforge:29.5.0.26"
+    //runtimeOnly "mezz.jei:jei-26.1.2-neoforge:29.5.0.26"
 }
 
 configurations {

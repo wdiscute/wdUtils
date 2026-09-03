@@ -3,9 +3,15 @@ package com.wdiscute.utils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.netty.buffer.ByteBuf;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.data.worldgen.BootstrapContext;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
@@ -17,6 +23,7 @@ import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @Mod(Utils.MOD_ID)
 public class Utils
@@ -37,6 +44,11 @@ public class Utils
     public static Identifier rl(String path)
     {
         return Identifier.fromNamespaceAndPath("minecraft", path);
+    }
+
+    public static boolean hasShiftDown()
+    {
+        return Minecraft.getInstance().hasShiftDown();
     }
 
     @SafeVarargs
@@ -101,27 +113,50 @@ public class Utils
         return Holder.direct(entityType);
     }
 
+    public static Holder<EntityType<?>> holderEntity(String ns, String path)
+    {
+        return BuiltInRegistries.ENTITY_TYPE.getValue(rl(ns, path)).builtInRegistryHolder();
+    }
+
     //returns a smoothed value from min to max, cycling once every `time` seconds
     private static final double TAU = Math.PI * 2.0;
+
     public static float smooth(float min, float max, float time)
     {
         double angle = System.currentTimeMillis() * (TAU / (time * 1000.0));
         return (float) (min + (Math.sin(angle) + 1.0) * 0.5 * (max - min));
     }
 
-    //0-255
+    //0-1
+    public static int toColorF(float red, float green, float blue, float alpha)
+    {
+        int r = Math.round(Math.clamp(red, 0, 1) * 255);
+        int g = Math.round(Math.clamp(green, 0, 1) * 255);
+        int b = Math.round(Math.clamp(blue, 0, 1) * 255);
+        int a = Math.round(Math.clamp(alpha, 0, 1) * 255);
+
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    //0-1
+    public static int toColorI(int red, int green, int blue, int alpha)
+    {
+        return (Math.clamp(alpha, 0, 255) << 24) | (Math.clamp(red, 0, 255) << 16) | (Math.clamp(green, 0, 255) << 8) | Math.clamp(blue, 0, 255);
+    }
+
+    //0x00ff0000 -> returns 0-255
     public static int intToRed(int packedColor)
     {
         return packedColor >> 16 & 255;
     }
 
-    //0-255
+    //0x0000ff00 -> returns 0-255
     public static int intToGreen(int packedColor)
     {
         return packedColor >> 8 & 255;
     }
 
-    //0-255
+    //0x000000ff -> returns 0-255
     public static int intToBlue(int packedColor)
     {
         return packedColor & 255;
