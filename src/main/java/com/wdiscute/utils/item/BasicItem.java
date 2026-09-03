@@ -6,6 +6,11 @@ public class BasicItem extends Item
 {
     public BasicItem()
     {
-        super(new Item.Properties());
+        super(new Properties());
+    }
+
+    public BasicItem(Properties properties)
+    {
+        super(properties);
     }
 }

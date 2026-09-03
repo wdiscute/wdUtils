@@ -32,9 +32,20 @@ java {
 }
 
 repositories {
+    //jei
+    maven {
+        url = "https://dvs1.progwml6.com/files/maven/"
+    }
+
+    //jei
+    maven {
+        url = "https://modmaven.dev"
+    }
 }
 
 dependencies {
+    //JEI
+    compileOnly "mezz.jei:jei-26.2-neoforge:30.30.0.204"
 }
 
 configurations {

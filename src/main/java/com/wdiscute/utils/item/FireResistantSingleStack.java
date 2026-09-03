@@ -4,6 +4,12 @@ import net.minecraft.world.item.Item;
 
 public class FireResistantSingleStack extends Item
 {
+    public FireResistantSingleStack(Properties properties)
+    {
+        super(properties.stacksTo(1).fireResistant());
+    }
+
+    @Deprecated
     public FireResistantSingleStack()
     {
         super(new Properties().stacksTo(1).fireResistant());
