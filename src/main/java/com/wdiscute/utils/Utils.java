@@ -24,6 +24,7 @@ import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 @Mod(Utils.MOD_ID)
 public class Utils
@@ -176,6 +177,19 @@ public class Utils
     {
     }
 
+    public static <T> void ifNotNull(T o, Consumer<? super T> action)
+    {
+        if(o != null)
+            action.accept(o);
+    }
+
+    public static <T> void ifNull(T o, Consumer<? super T> action)
+    {
+        if(o == null)
+            action.accept(null);
+    }
+
+
     public record Duo<F, S>(F first, S second)
     {
         public static <F, S> Codec<Duo<F, S>> codec(
@@ -301,7 +315,6 @@ public class Utils
                     Quad::new);
         }
     }
-
 
     public static class InventoryManagement
     {
