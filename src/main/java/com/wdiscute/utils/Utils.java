@@ -14,6 +14,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 @Mod(Utils.MOD_ID)
 public class Utils
@@ -150,6 +151,18 @@ public class Utils
 
     public static void nothing(Object... o)
     {
+    }
+
+    public static <T> void ifNotNull(T o, Consumer<? super T> action)
+    {
+        if(o != null)
+            action.accept(o);
+    }
+
+    public static <T> void ifNull(T o, Consumer<? super T> action)
+    {
+        if(o == null)
+            action.accept(null);
     }
 
     public record Duo<F, S>(F first, S second)
