@@ -7,6 +7,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.block.Block;
+import net.nikdo53.neobackports.io.StreamCodec;
+import net.nikdo53.neobackports.io.utils.ByteBufCodecs;
 
 public record MaybeStack(ResourceLocation identifier, int count, CompoundTag patch)
 {
@@ -85,11 +87,11 @@ public record MaybeStack(ResourceLocation identifier, int count, CompoundTag pat
             CompoundTag.CODEC.optionalFieldOf("data_components_patch", new CompoundTag()).forGetter(MaybeStack::patch)
     ).apply(instance, MaybeStack::new));
 
-//    public static final StreamCodec<RegistryFriendlyByteBuf, MaybeStack> STREAM_CODEC =
-//            StreamCodec.composite(
-//                    ResourceLocation.STREAM_CODEC, MaybeStack::identifier,
-//                    ByteBufCodecs.INT, MaybeStack::count,
-//                    DataComponentPatch.STREAM_CODEC, MaybeStack::patch,
-//                    MaybeStack::new
-//            );
+    public static final StreamCodec<MaybeStack> STREAM_CODEC =
+            StreamCodec.composite(
+                    ByteBufCodecs.RESOURCE_LOCATION, MaybeStack::identifier,
+                    ByteBufCodecs.INT, MaybeStack::count,
+                    ByteBufCodecs.fromCodec(CompoundTag.CODEC), MaybeStack::patch,
+                    MaybeStack::new
+            );
 }
