@@ -3,6 +3,8 @@ package com.wdiscute.utils.datagen;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.JsonOps;
 import com.wdiscute.utils.DataEntry;
+import com.wdiscute.utils.Utils;
+import net.minecraft.Util;
 import net.minecraft.data.CachedOutput;
 import net.minecraft.data.DataProvider;
 import net.minecraft.data.PackOutput;
@@ -26,10 +28,9 @@ public class DataEntryProvider<T> implements DataProvider
     @Override
     public CompletableFuture<?> run(CachedOutput cachedOutput)
     {
-
         JsonElement json = dataEntry.codec()
                 .encodeStart(JsonOps.INSTANCE, data)
-                .getOrThrow();
+                .getOrThrow(true, Utils::nothing);
 
         Path path = output.getOutputFolder(PackOutput.Target.DATA_PACK)
                 .resolve(dataEntry.rl().getNamespace())

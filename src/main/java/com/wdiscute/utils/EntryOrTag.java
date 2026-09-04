@@ -16,10 +16,18 @@ public sealed interface EntryOrTag<T>
 {
     default String getTranslation(String prefix)
     {
-        if (this instanceof Entry<T>(ResourceKey<T> key))
-            return prefix + "." + key.location().toLanguageKey();
-        if (this instanceof Tag<T>(TagKey<T> tag))
-            return "tag." + tag.location().toLanguageKey();
+        if (this instanceof Entry)
+        {
+            Entry<T> entry = (Entry<T>) this;
+            return prefix + "." + entry.key().location().toLanguageKey();
+        }
+
+        if (this instanceof Tag)
+        {
+            Tag<T> tag = (Tag<T>) this;
+            return "tag." + tag.tag().location().toLanguageKey();
+        }
+
         return "uuuuhhh something went wrong! Oops...";
     }
 
@@ -30,9 +38,9 @@ public sealed interface EntryOrTag<T>
         @Override
         public boolean matches(Holder<T> entry, Registry<T> registry)
         {
-            ResourceKey<T> rk = entry.getKey();
+            Optional<ResourceKey<T>> rk = entry.unwrapKey();
 
-            if(rk == null) return false;
+            if (!rk.isPresent()) return false;
 
             return rk.equals(key);
         }
@@ -73,10 +81,15 @@ public sealed interface EntryOrTag<T>
                         return DataResult.success(new Entry<>(ResourceKey.create(registryKey, loc)));
                     }
                 },
-                entryOrTag -> switch (entryOrTag)
+                entryOrTag ->
                 {
-                    case Entry<T> e -> e.key().location().toString();
-                    case Tag<T> t -> "#" + t.tag().location();
+                    if (entryOrTag instanceof Entry<T> e)
+                        return e.key().location().toString();
+
+                    if (entryOrTag instanceof Tag<T> t)
+                        return "#" + t.tag().location();
+
+                    throw new IllegalStateException("Unknown EntryOrTag type: " + entryOrTag);
                 }
         );
     }

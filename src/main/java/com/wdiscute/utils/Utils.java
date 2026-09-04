@@ -7,11 +7,11 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.minecraftforge.event.AddReloadListenerEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -107,10 +107,10 @@ public class Utils
     //0-1
     public static int toColorF(float red, float green, float blue, float alpha)
     {
-        int r = Math.round(Math.clamp(red, 0, 1) * 255);
-        int g = Math.round(Math.clamp(green, 0, 1) * 255);
-        int b = Math.round(Math.clamp(blue, 0, 1) * 255);
-        int a = Math.round(Math.clamp(alpha, 0, 1) * 255);
+        int r = Math.round(Mth.clamp(red, 0, 1) * 255);
+        int g = Math.round(Mth.clamp(green, 0, 1) * 255);
+        int b = Math.round(Mth.clamp(blue, 0, 1) * 255);
+        int a = Math.round(Mth.clamp(alpha, 0, 1) * 255);
 
         return (a << 24) | (r << 16) | (g << 8) | b;
     }
@@ -118,7 +118,7 @@ public class Utils
     //0-1
     public static int toColorI(int red, int green, int blue, int alpha)
     {
-        return (Math.clamp(alpha, 0, 255) << 24) | (Math.clamp(red, 0, 255) << 16) | (Math.clamp(green, 0, 255) << 8) | Math.clamp(blue, 0, 255);
+        return (Mth.clamp(alpha, 0, 255) << 24) | (Mth.clamp(red, 0, 255) << 16) | (Mth.clamp(green, 0, 255) << 8) | Mth.clamp(blue, 0, 255);
     }
 
     //0x00ff0000 -> returns 0-255
@@ -252,7 +252,7 @@ public class Utils
         }
     }
 
-    @EventBusSubscriber(modid = Utils.MOD_ID)
+    @Mod.EventBusSubscriber(modid = Utils.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
     static class Events
     {
         @SubscribeEvent

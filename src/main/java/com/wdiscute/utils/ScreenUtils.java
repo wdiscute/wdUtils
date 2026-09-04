@@ -11,13 +11,11 @@ import net.minecraft.Util;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.fml.ModList;
+import net.minecraftforge.fml.ModList;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -81,7 +79,7 @@ public class ScreenUtils
         {
             if (tooltip == null)
                 tooltip = new ArrayList<>();
-            tooltip.add(Math.clamp(index, 0, tooltip.size()), component);
+            tooltip.add(Mth.clamp(index, 0, tooltip.size()), component);
         }
 
         @SuppressWarnings("unchecked")
@@ -124,13 +122,13 @@ public class ScreenUtils
     // 0-255
     public static void setAlpha(int alpha)
     {
-        color = (color & 0x00FFFFFF) | ((Math.clamp(alpha, 0, 255) & 0xFF) << 24);
+        color = (color & 0x00FFFFFF) | ((Mth.clamp(alpha, 0, 255) & 0xFF) << 24);
     }
 
     // 0-1
     public static void setAlphaF(float alpha)
     {
-        setAlpha((int)(Math.clamp(alpha, 0, 1) * 255.0f));
+        setAlpha((int)(Mth.clamp(alpha, 0, 1) * 255.0f));
     }
 
     public static void setColor(int color)
@@ -192,19 +190,19 @@ public class ScreenUtils
             );
         }
 
-        public static StreamCodec<ByteBuf, Image> streamCodecFixedSize(int textureWidth, int textureHeight)
-        {
-            return StreamCodec.composite(
-                    ResourceLocation.STREAM_CODEC, Image::id,
-                    (o) -> new Image(o, textureWidth, textureHeight));
-        }
-
-        public static final StreamCodec<ByteBuf, Image> STREAM_CODEC = StreamCodec.composite(
-                ResourceLocation.STREAM_CODEC, Image::id,
-                ByteBufCodecs.INT, Image::textureWidth,
-                ByteBufCodecs.INT, Image::textureHeight,
-                Image::new
-        );
+//        public static StreamCodec<ByteBuf, Image> streamCodecFixedSize(int textureWidth, int textureHeight)
+//        {
+//            return StreamCodec.composite(
+//                    ResourceLocation.STREAM_CODEC, Image::id,
+//                    (o) -> new Image(o, textureWidth, textureHeight));
+//        }
+//
+//        public static final StreamCodec<ByteBuf, Image> STREAM_CODEC = StreamCodec.composite(
+//                ResourceLocation.STREAM_CODEC, Image::id,
+//                ByteBufCodecs.INT, Image::textureWidth,
+//                ByteBufCodecs.INT, Image::textureHeight,
+//                Image::new
+//        );
 
         public void render(GuiGraphics guiGraphics)
         {
