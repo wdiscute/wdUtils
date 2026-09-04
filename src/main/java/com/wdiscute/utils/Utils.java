@@ -187,7 +187,7 @@ public class Utils
 
     public static boolean i18nExists(String key)
     {
-        return Language.getInstance().getLanguageData().get(key) == null;
+        return Language.getInstance().getLanguageData().get(key) != null;
     }
 
     public record Duo<F, S>(F first, S second)
