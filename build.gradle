@@ -35,6 +35,11 @@ repositories {
     maven {
         url = "https://modmaven.dev"
     }
+
+    //neobackports
+    maven {
+        url = 'https://nikdo53.github.io/NeoBackports'
+    }
 }
 
 dependencies {
@@ -43,6 +48,11 @@ dependencies {
 
     //JEI
     modCompileOnly "mezz.jei:jei-${mc_version}-forge:15.20.0.130"
+
+    //NeoBackports
+    jarJar(modImplementation("net.nikdo53:NeoBackports:1.2.5"))
+    interfaceInjectionData("net.nikdo53:NeoBackports:1.2.5")
+
 }
 
 java {

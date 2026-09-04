@@ -16,6 +16,8 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.ModList;
+import net.nikdo53.neobackports.io.StreamCodec;
+import net.nikdo53.neobackports.io.utils.ByteBufCodecs;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -190,19 +192,19 @@ public class ScreenUtils
             );
         }
 
-//        public static StreamCodec<ByteBuf, Image> streamCodecFixedSize(int textureWidth, int textureHeight)
-//        {
-//            return StreamCodec.composite(
-//                    ResourceLocation.STREAM_CODEC, Image::id,
-//                    (o) -> new Image(o, textureWidth, textureHeight));
-//        }
-//
-//        public static final StreamCodec<ByteBuf, Image> STREAM_CODEC = StreamCodec.composite(
-//                ResourceLocation.STREAM_CODEC, Image::id,
-//                ByteBufCodecs.INT, Image::textureWidth,
-//                ByteBufCodecs.INT, Image::textureHeight,
-//                Image::new
-//        );
+        public static StreamCodec<Image> streamCodecFixedSize(int textureWidth, int textureHeight)
+        {
+            return StreamCodec.composite(
+                    ByteBufCodecs.RESOURCE_LOCATION, Image::id,
+                    (o) -> new Image(o, textureWidth, textureHeight));
+        }
+
+        public static final StreamCodec<Image> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.RESOURCE_LOCATION, Image::id,
+                ByteBufCodecs.INT, Image::textureWidth,
+                ByteBufCodecs.INT, Image::textureHeight,
+                Image::new
+        );
 
         public void render(GuiGraphics guiGraphics)
         {
