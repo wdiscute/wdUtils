@@ -9,6 +9,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.worldgen.BootstrapContext;
+import net.minecraft.locale.Language;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -189,6 +190,10 @@ public class Utils
             action.accept(null);
     }
 
+    public static boolean i18nExists(String key)
+    {
+        return Language.getInstance().getLanguageData().get(key) == null;
+    }
 
     public record Duo<F, S>(F first, S second)
     {
