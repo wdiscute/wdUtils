@@ -6,6 +6,7 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.locale.Language;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
@@ -184,6 +185,10 @@ public class Utils
             action.accept(null);
     }
 
+    public static boolean i18nExists(String key)
+    {
+        return Language.getInstance().getLanguageData().get(key) == null;
+    }
 
     public record Duo<F, S>(F first, S second)
     {
