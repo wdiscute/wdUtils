@@ -38,11 +38,7 @@ public sealed interface EntryOrTag<T>
         @Override
         public boolean matches(Holder<T> entry, Registry<T> registry)
         {
-            Optional<ResourceKey<T>> rk = entry.unwrapKey();
-
-            if (!rk.isPresent()) return false;
-
-            return rk.equals(key);
+            return entry.unwrapKey().map(tResourceKey -> tResourceKey.equals(key)).orElse(false);
         }
     }
 
