@@ -37,7 +37,7 @@ public record MaybeStack(ResourceLocation identifier, int count, CompoundTag pat
 
     public MaybeStack(String ns, String path)
     {
-        this(ResourceLocation.fromNamespaceAndPath(ns, path));
+        this(new ResourceLocation(ns, path));
     }
 
 //    public MaybeStack(DeferredItem<Item> item)

@@ -29,12 +29,12 @@ public class Utils
 
     public static ResourceLocation rl(String ns, String path)
     {
-        return ResourceLocation.fromNamespaceAndPath(ns, path);
+        return new ResourceLocation(ns, path);
     }
 
     public static ResourceLocation rl(String path)
     {
-        return ResourceLocation.fromNamespaceAndPath("minecraft", path);
+        return new ResourceLocation("minecraft", path);
     }
 
     @SafeVarargs

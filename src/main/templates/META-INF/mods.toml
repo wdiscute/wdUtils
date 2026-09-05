@@ -21,12 +21,14 @@ description='''A set of useful classes and systems for minecraft modders'''
 
 [[dependencies.wdutils]] #optional
 modId="forge" #mandatory
+mandatory=true #mandatory
 versionRange="[47.3.10,)" #mandatory
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.wdutils]]
 modId="minecraft"
-versionRange="[1.20.1,1.21)"
+mandatory=true #mandatory
+versionRange="[1.20.1]"
 ordering="NONE"
 side="BOTH"
