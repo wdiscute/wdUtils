@@ -183,14 +183,16 @@ legacyForge.ideSyncTask generateModMetadata
 
 // Example configuration to allow publishing using the maven-publish plugin
 publishing {
-    publications {
-        register('mavenJava', MavenPublication) {
-            from components.java
+    repositories {
+        maven {
+            url = "$rootDir/build/maven"
         }
     }
 
-    repositories {
-        mavenLocal()
+    publications {
+        gpr(MavenPublication) {
+            from(components.java)
+        }
     }
 }
 
