@@ -8,6 +8,7 @@ import net.minecraft.data.DataProvider;
 import net.minecraft.data.PackOutput;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class DataEntryProvider<T> implements DataProvider
@@ -42,5 +43,40 @@ public class DataEntryProvider<T> implements DataProvider
     public String getName()
     {
         return toString();
+    }
+
+    public static class MultiEntry<T> implements DataProvider
+    {
+        private final DataEntry.MultiEntry<T> dataEntry;
+        private final PackOutput output;
+        private final List<T> data;
+
+        public MultiEntry(PackOutput output, DataEntry.MultiEntry<T> dataEntry, List<T> data)
+        {
+            this.output = output;
+            this.dataEntry = dataEntry;
+            this.data = data;
+        }
+
+        @Override
+        public CompletableFuture<?> run(CachedOutput cachedOutput)
+        {
+
+            JsonElement json = dataEntry.codec()
+                    .encodeStart(JsonOps.INSTANCE, data)
+                    .getOrThrow();
+
+            Path path = output.getOutputFolder(PackOutput.Target.DATA_PACK)
+                    .resolve(dataEntry.path().getNamespace())
+                    .resolve(dataEntry.path().getPath() + ".json");
+
+            return DataProvider.saveStable(cachedOutput, json, path);
+        }
+
+        @Override
+        public String getName()
+        {
+            return toString();
+        }
     }
 }

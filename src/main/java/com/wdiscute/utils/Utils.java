@@ -12,6 +12,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.entity.player.UseItemOnBlockEvent;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -259,6 +260,7 @@ public class Utils
         public static void registerReloadListeners(AddReloadListenerEvent event)
         {
             event.addListener(new DataEntry.DataEntryReloadListener());
+            event.addListener(new DataEntry.MultiEntry.ListDataEntryReloadListener());
         }
     }
 }
