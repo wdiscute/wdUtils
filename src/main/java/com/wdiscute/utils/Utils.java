@@ -190,6 +190,18 @@ public class Utils
             action.accept(null);
     }
 
+    @SafeVarargs
+    public static <T> T orElse(T o, T... orElse)
+    {
+        if (o != null)
+            return o;
+        else
+            for (T maybeANullValueAsWellWhoKnowsIGuessJavaKnows : orElse)
+                if (maybeANullValueAsWellWhoKnowsIGuessJavaKnows != null)
+                    return maybeANullValueAsWellWhoKnowsIGuessJavaKnows;
+        return null;
+    }
+
     public static boolean i18nExists(String key)
     {
         return Language.getInstance().getLanguageData().get(key) != null;
