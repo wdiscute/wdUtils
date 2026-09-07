@@ -15,11 +15,14 @@ import net.minecraft.world.entity.EntityType;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.TagsUpdatedEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -283,9 +286,9 @@ public class Utils
         }
 
         @SubscribeEvent
-        public static void playerLoggedInEvent(PlayerEvent.PlayerLoggedInEvent event)
+        public static void registerReloadListeners(TagsUpdatedEvent event)
         {
-            if (event.getEntity() instanceof ServerPlayer player)
+            if (!FMLLoader.getDist().isClient() && ServerLifecycleHooks.getCurrentServer() != null)
             {
                 //sync data entries
                 PacketDistributor.sendToAllPlayers(
@@ -298,6 +301,31 @@ public class Utils
 
                 //sync multi entries
                 PacketDistributor.sendToAllPlayers(
+                        new MultiDataEntrySyncPayload(
+                                DataEntry.MultiEntry.MAP.entrySet().stream()
+                                        .filter(entry -> DataEntry.MultiEntry.SYNC_ENTRIES_BY_ID.containsKey(entry.getKey().path()))
+                                        .toList()
+                        )
+                );
+            }
+        }
+
+        @SubscribeEvent
+        public static void playerLoggedInEvent(PlayerEvent.PlayerLoggedInEvent event)
+        {
+            if (event.getEntity() instanceof ServerPlayer player && !FMLLoader.getDist().isClient())
+            {
+                //sync data entries
+                PacketDistributor.sendToPlayer(player,
+                        new DataEntrySyncPayload(
+                                DataEntry.MAP.entrySet().stream()
+                                        .filter(entry -> DataEntry.SYNC_ENTRIES_BY_ID.containsKey(entry.getKey().rl()))
+                                        .toList()
+                        )
+                );
+
+                //sync multi entries
+                PacketDistributor.sendToPlayer(player,
                         new MultiDataEntrySyncPayload(
                                 DataEntry.MultiEntry.MAP.entrySet().stream()
                                         .filter(entry -> DataEntry.MultiEntry.SYNC_ENTRIES_BY_ID.containsKey(entry.getKey().path()))

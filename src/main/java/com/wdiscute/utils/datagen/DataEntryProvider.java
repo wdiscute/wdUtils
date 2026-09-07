@@ -68,6 +68,7 @@ public class DataEntryProvider<T> implements DataProvider
 
             Path path = output.getOutputFolder(PackOutput.Target.DATA_PACK)
                     .resolve(dataEntry.path().getNamespace())
+                    .resolve(dataEntry.path().getNamespace())
                     .resolve(dataEntry.path().getPath() + ".json");
 
             return DataProvider.saveStable(cachedOutput, json, path);

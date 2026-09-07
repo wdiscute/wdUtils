@@ -17,6 +17,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.io.BufferedReader;
@@ -89,13 +90,6 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
         {
             DataEntry.MAP.clear();
             DataEntry.MAP.putAll(values);
-            PacketDistributor.sendToAllPlayers(
-                    new DataEntrySyncPayload(
-                            DataEntry.MAP.entrySet().stream()
-                                    .filter(entry -> DataEntry.SYNC_ENTRIES_BY_ID.containsKey(entry.getKey().rl()))
-                                    .toList()
-                    )
-            );
         }
     }
 
@@ -131,9 +125,6 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
             @Override
             protected Map<MultiEntry<?>, List<?>> prepare(ResourceManager resourceManager, ProfilerFiller profiler)
             {
-                for (int i = 0; i < 10; i++)
-                    System.out.println("reloading list datamaps!");
-
                 Map<MultiEntry<?>, List<?>> values = new HashMap<>();
 
                 //for each registered data entry
@@ -183,14 +174,6 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
             protected void apply(Map<MultiEntry<?>, List<?>> values, ResourceManager resourceManager, ProfilerFiller profiler)
             {
                 MultiEntry.MAP.putAll(values);
-                PacketDistributor.sendToAllPlayers(
-                        new MultiDataEntrySyncPayload(
-                                MultiEntry.SYNC_ENTRIES_BY_ID.values().stream()
-                                        //???????
-                                        .map(entry -> Map.<MultiEntry<?>, List<?>>entry(entry, MultiEntry.MAP.get(entry)))
-                                        .toList()
-                        )
-                );
             }
         }
     }
