@@ -6,6 +6,10 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
+import com.wdiscute.utils.network.DataEntrySyncPayload;
+import com.wdiscute.utils.network.MultiDataEntrySyncPayload;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
@@ -13,6 +17,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.io.BufferedReader;
 import java.util.ArrayList;
@@ -24,11 +29,20 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
 {
     private static final Gson GSON = new Gson();
     public static final Map<DataEntry<?>, Object> MAP = new HashMap<>();
+    public static final Map<ResourceLocation, DataEntry<?>> SYNC_ENTRIES_BY_ID = new HashMap<>();
+    public static final Map<DataEntry<?>, StreamCodec<RegistryFriendlyByteBuf, ?>> STREAM_CODECS = new HashMap<>();
 
     @SuppressWarnings("unchecked")
     public T get()
     {
         return (T) MAP.get(this);
+    }
+
+    public DataEntry<T> sync(StreamCodec<RegistryFriendlyByteBuf, T> streamCodec)
+    {
+        STREAM_CODECS.put(this, streamCodec);
+        SYNC_ENTRIES_BY_ID.put(rl, this);
+        return this;
     }
 
     public static <T> DataEntry<T> register(ResourceLocation rl, Codec<T> codec, T defaultValue)
@@ -67,7 +81,6 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
                     }
                 });
             }
-
             return values;
         }
 
@@ -76,6 +89,13 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
         {
             DataEntry.MAP.clear();
             DataEntry.MAP.putAll(values);
+            PacketDistributor.sendToAllPlayers(
+                    new DataEntrySyncPayload(
+                            DataEntry.MAP.entrySet().stream()
+                                    .filter(entry -> DataEntry.SYNC_ENTRIES_BY_ID.containsKey(entry.getKey().rl()))
+                                    .toList()
+                    )
+            );
         }
     }
 
@@ -83,6 +103,8 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
     {
         private static final Gson GSON = new Gson();
         public static final Map<MultiEntry<?>, List<?>> MAP = new HashMap<>();
+        public static final Map<ResourceLocation, MultiEntry<?>> SYNC_ENTRIES_BY_ID = new HashMap<>();
+        public static final Map<MultiEntry<?>, StreamCodec<RegistryFriendlyByteBuf, ?>> STREAM_CODECS = new HashMap<>();
 
         @SuppressWarnings("unchecked")
         public List<T> get()
@@ -95,6 +117,13 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
             MultiEntry<T> entry = new MultiEntry<>(path, codec.listOf());
             MAP.put(entry, List.of());
             return entry;
+        }
+
+        public MultiEntry<T> sync(StreamCodec<RegistryFriendlyByteBuf, T> streamCodec)
+        {
+            STREAM_CODECS.put(this, streamCodec);
+            SYNC_ENTRIES_BY_ID.put(path, this);
+            return this;
         }
 
         public static class ListDataEntryReloadListener extends SimplePreparableReloadListener<Map<MultiEntry<?>, List<?>>>
@@ -154,6 +183,14 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
             protected void apply(Map<MultiEntry<?>, List<?>> values, ResourceManager resourceManager, ProfilerFiller profiler)
             {
                 MultiEntry.MAP.putAll(values);
+                PacketDistributor.sendToAllPlayers(
+                        new MultiDataEntrySyncPayload(
+                                MultiEntry.SYNC_ENTRIES_BY_ID.values().stream()
+                                        //???????
+                                        .map(entry -> Map.<MultiEntry<?>, List<?>>entry(entry, MultiEntry.MAP.get(entry)))
+                                        .toList()
+                        )
+                );
             }
         }
     }
