@@ -176,6 +176,18 @@ public class Utils
             action.accept(null);
     }
 
+    @SafeVarargs
+    public static <T> T orElse(T o, T... orElse)
+    {
+        if (o != null)
+            return o;
+        else
+            for (T maybeANullValueAsWellWhoKnowsIGuessJavaKnows : orElse)
+                if (maybeANullValueAsWellWhoKnowsIGuessJavaKnows != null)
+                    return maybeANullValueAsWellWhoKnowsIGuessJavaKnows;
+        return null;
+    }
+
     public record Duo<F, S>(F first, S second)
     {
         public static <F, S> Codec<Duo<F, S>> codec(

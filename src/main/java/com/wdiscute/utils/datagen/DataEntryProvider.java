@@ -3,12 +3,14 @@ package com.wdiscute.utils.datagen;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.JsonOps;
 import com.wdiscute.utils.DataEntry;
+import com.wdiscute.utils.Utils;
 import net.minecraft.data.CachedOutput;
 import net.minecraft.data.DataProvider;
 import net.minecraft.data.PackOutput;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class DataEntryProvider<T> implements DataProvider
@@ -50,12 +52,18 @@ public class DataEntryProvider<T> implements DataProvider
         private final DataEntry.MultiEntry<T> dataEntry;
         private final PackOutput output;
         private final List<T> data;
+        private String customDatapackName;
 
         public MultiEntry(PackOutput output, DataEntry.MultiEntry<T> dataEntry, List<T> data)
         {
             this.output = output;
             this.dataEntry = dataEntry;
             this.data = data;
+        }
+
+        public void setCustomDatapackName(String name)
+        {
+            customDatapackName = customDatapackName;
         }
 
         @Override
@@ -67,7 +75,7 @@ public class DataEntryProvider<T> implements DataProvider
                     .getOrThrow();
 
             Path path = output.getOutputFolder(PackOutput.Target.DATA_PACK)
-                    .resolve(dataEntry.path().getNamespace())
+                    .resolve(Utils.orElse(customDatapackName, dataEntry.path().getNamespace()))
                     .resolve(dataEntry.path().getNamespace())
                     .resolve(dataEntry.path().getPath() + ".json");
 
