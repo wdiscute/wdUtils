@@ -2,6 +2,8 @@ package com.wdiscute.utils;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.wdiscute.utils.network.DataEntrySyncPayload;
+import com.wdiscute.utils.network.MultiDataEntrySyncPayload;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
@@ -13,6 +15,7 @@ import net.minecraft.locale.Language;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
@@ -22,6 +25,10 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -231,15 +238,16 @@ public class Utils
             ).apply(instance, Duo::new));
         }
 
-        public static <F, S> StreamCodec<ByteBuf, Duo<F, S>> streamCodec(
-                StreamCodec<ByteBuf, F> firstCodec,
-                StreamCodec<ByteBuf, S> secondCodec
+        public static <B, F, S> StreamCodec<B, Duo<F, S>> streamCodec(
+                StreamCodec<? super B, F> firstCodec,
+                StreamCodec<? super B, S> secondCodec
         )
         {
             return StreamCodec.composite(
                     firstCodec, Duo::first,
                     secondCodec, Duo::second,
-                    Duo::new);
+                    Duo::new
+            );
         }
     }
 
@@ -439,6 +447,48 @@ public class Utils
         public static void registerReloadListeners(AddClientReloadListenersEvent event)
         {
             event.addListener(rl("wdutils_data_entry_client"), new DataEntry.DataEntryReloadListener());
+        }
+
+        @SubscribeEvent
+        public static void playerLoggedInEvent(PlayerEvent.PlayerLoggedInEvent event)
+        {
+            if (event.getEntity() instanceof ServerPlayer player)
+            {
+                //sync data entries
+                PacketDistributor.sendToAllPlayers(
+                        new DataEntrySyncPayload(
+                                DataEntry.MAP.entrySet().stream()
+                                        .filter(entry -> DataEntry.SYNC_ENTRIES_BY_ID.containsKey(entry.getKey().rl()))
+                                        .toList()
+                        )
+                );
+
+                //sync multi entries
+                PacketDistributor.sendToAllPlayers(
+                        new MultiDataEntrySyncPayload(
+                                DataEntry.MultiEntry.MAP.entrySet().stream()
+                                        .filter(entry -> DataEntry.MultiEntry.SYNC_ENTRIES_BY_ID.containsKey(entry.getKey().path()))
+                                        .toList()
+                        )
+                );
+            }
+        }
+
+        @SubscribeEvent
+        public static void registerPayloads(final RegisterPayloadHandlersEvent event)
+        {
+            final PayloadRegistrar registrar = event.registrar("1");
+            registrar.playToClient(
+                    DataEntrySyncPayload.TYPE,
+                    DataEntrySyncPayload.STREAM_CODEC,
+                    DataEntrySyncPayload::handle
+            );
+
+            registrar.playToClient(
+                    MultiDataEntrySyncPayload.TYPE,
+                    MultiDataEntrySyncPayload.STREAM_CODEC,
+                    MultiDataEntrySyncPayload::handle
+            );
         }
     }
 }
