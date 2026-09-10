@@ -298,7 +298,7 @@ public class Utils
         }
 
         @SubscribeEvent
-        public static void registerReloadListeners(TagsUpdatedEvent event)
+        public static void tagsUpdatedEvent(TagsUpdatedEvent event)
         {
             if (!FMLLoader.getDist().isClient() && ServerLifecycleHooks.getCurrentServer() != null)
             {
