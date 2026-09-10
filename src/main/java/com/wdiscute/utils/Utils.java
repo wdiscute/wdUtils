@@ -15,6 +15,7 @@ import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.nikdo53.neobackports.event.RegisterPayloadHandlersEvent;
+import net.nikdo53.neobackports.io.StreamCodec;
 import net.nikdo53.neobackports.io.networking.PayloadRegistrar;
 
 import java.util.*;
@@ -203,6 +204,18 @@ public class Utils
                     firstCodec.fieldOf(firstName).forGetter(Duo::first),
                     secondCodec.fieldOf(secondName).forGetter(Duo::second)
             ).apply(instance, Duo::new));
+        }
+
+        public static <B, F, S> StreamCodec<Duo<F, S>> streamCodec(
+                StreamCodec<F> firstCodec,
+                StreamCodec<S> secondCodec
+        )
+        {
+            return StreamCodec.composite(
+                    firstCodec, Duo::first,
+                    secondCodec, Duo::second,
+                    Duo::new
+            );
         }
     }
 
