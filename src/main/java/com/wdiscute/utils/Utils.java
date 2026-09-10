@@ -288,6 +288,27 @@ public class Utils
         }
     }
 
+    @Mod.EventBusSubscriber(modid = Utils.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
+    static class ModEvents
+    {
+        @SubscribeEvent
+        public static void registerPayloads(final RegisterPayloadHandlersEvent event)
+        {
+            final PayloadRegistrar registrar = event.registrar("1", Utils.MOD_ID);
+            registrar.playToClient(
+                    DataEntrySyncPayload.TYPE,
+                    DataEntrySyncPayload.STREAM_CODEC,
+                    DataEntrySyncPayload::handle
+            );
+
+            registrar.playToClient(
+                    MultiDataEntrySyncPayload.TYPE,
+                    MultiDataEntrySyncPayload.STREAM_CODEC,
+                    MultiDataEntrySyncPayload::handle
+            );
+        }
+    }
+
     @Mod.EventBusSubscriber(modid = Utils.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
     static class Events
     {
@@ -295,6 +316,7 @@ public class Utils
         public static void registerReloadListeners(AddReloadListenerEvent event)
         {
             event.addListener(new DataEntry.DataEntryReloadListener());
+            event.addListener(new DataEntry.MultiEntry.ListDataEntryReloadListener());
         }
 
         @SubscribeEvent
@@ -345,23 +367,6 @@ public class Utils
                         )
                 );
             }
-        }
-
-        @SubscribeEvent
-        public static void registerPayloads(final RegisterPayloadHandlersEvent event)
-        {
-            final PayloadRegistrar registrar = event.registrar("1", "wdutils");
-            registrar.playToClient(
-                    DataEntrySyncPayload.TYPE,
-                    DataEntrySyncPayload.STREAM_CODEC,
-                    DataEntrySyncPayload::handle
-            );
-
-            registrar.playToClient(
-                    MultiDataEntrySyncPayload.TYPE,
-                    MultiDataEntrySyncPayload.STREAM_CODEC,
-                    MultiDataEntrySyncPayload::handle
-            );
         }
     }
 }
