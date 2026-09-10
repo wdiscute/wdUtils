@@ -2,6 +2,8 @@ package com.wdiscute.utils;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.wdiscute.utils.network.DataEntrySyncPayload;
+import com.wdiscute.utils.network.MultiDataEntrySyncPayload;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -12,6 +14,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.nikdo53.neobackports.event.RegisterPayloadHandlersEvent;
+import net.nikdo53.neobackports.io.networking.PayloadRegistrar;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -165,6 +169,18 @@ public class Utils
             action.accept(null);
     }
 
+    @SafeVarargs
+    public static <T> T orElse(T o, T... orElse)
+    {
+        if (o != null)
+            return o;
+        else
+            for (T maybeANullValueAsWellWhoKnowsIGuessJavaKnows : orElse)
+                if (maybeANullValueAsWellWhoKnowsIGuessJavaKnows != null)
+                    return maybeANullValueAsWellWhoKnowsIGuessJavaKnows;
+        return null;
+    }
+
     public record Duo<F, S>(F first, S second)
     {
         public static <F, S> Codec<Duo<F, S>> codec(
@@ -259,6 +275,23 @@ public class Utils
         public static void registerReloadListeners(AddReloadListenerEvent event)
         {
             event.addListener(new DataEntry.DataEntryReloadListener());
+        }
+
+        @SubscribeEvent
+        public static void registerPayloads(final RegisterPayloadHandlersEvent event)
+        {
+            final PayloadRegistrar registrar = event.registrar("1", "wdutils");
+            registrar.playToClient(
+                    DataEntrySyncPayload.TYPE,
+                    DataEntrySyncPayload.STREAM_CODEC,
+                    DataEntrySyncPayload::handle
+            );
+
+            registrar.playToClient(
+                    MultiDataEntrySyncPayload.TYPE,
+                    MultiDataEntrySyncPayload.STREAM_CODEC,
+                    MultiDataEntrySyncPayload::handle
+            );
         }
     }
 }
