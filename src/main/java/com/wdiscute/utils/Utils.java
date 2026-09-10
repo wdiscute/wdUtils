@@ -9,13 +9,20 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.event.AddReloadListenerEvent;
+import net.minecraftforge.event.TagsUpdatedEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.loading.FMLLoader;
+import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.server.ServerLifecycleHooks;
 import net.nikdo53.neobackports.event.RegisterPayloadHandlersEvent;
 import net.nikdo53.neobackports.io.StreamCodec;
+import net.nikdo53.neobackports.io.networking.PacketDistributorNeo;
 import net.nikdo53.neobackports.io.networking.PayloadRegistrar;
 
 import java.util.*;
@@ -288,6 +295,56 @@ public class Utils
         public static void registerReloadListeners(AddReloadListenerEvent event)
         {
             event.addListener(new DataEntry.DataEntryReloadListener());
+        }
+
+        @SubscribeEvent
+        public static void tagsUpdatedEvent(TagsUpdatedEvent event)
+        {
+            if (!FMLLoader.getDist().isClient() && ServerLifecycleHooks.getCurrentServer() != null)
+            {
+                //sync data entries
+                PacketDistributorNeo.sendToAllPlayers(
+                        new DataEntrySyncPayload(
+                                DataEntry.MAP.entrySet().stream()
+                                        .filter(entry -> DataEntry.SYNC_ENTRIES_BY_ID.containsKey(entry.getKey().rl()))
+                                        .toList()
+                        )
+                );
+
+                //sync multi entries
+                PacketDistributorNeo.sendToAllPlayers(
+                        new MultiDataEntrySyncPayload(
+                                DataEntry.MultiEntry.MAP.entrySet().stream()
+                                        .filter(entry -> DataEntry.MultiEntry.SYNC_ENTRIES_BY_ID.containsKey(entry.getKey().path()))
+                                        .toList()
+                        )
+                );
+            }
+        }
+
+        @SubscribeEvent
+        public static void playerLoggedInEvent(PlayerEvent.PlayerLoggedInEvent event)
+        {
+            if (event.getEntity() instanceof ServerPlayer player && !FMLLoader.getDist().isClient())
+            {
+                //sync data entries
+                PacketDistributorNeo.sendToPlayer(player,
+                        new DataEntrySyncPayload(
+                                DataEntry.MAP.entrySet().stream()
+                                        .filter(entry -> DataEntry.SYNC_ENTRIES_BY_ID.containsKey(entry.getKey().rl()))
+                                        .toList()
+                        )
+                );
+
+                //sync multi entries
+                PacketDistributorNeo.sendToPlayer(player,
+                        new MultiDataEntrySyncPayload(
+                                DataEntry.MultiEntry.MAP.entrySet().stream()
+                                        .filter(entry -> DataEntry.MultiEntry.SYNC_ENTRIES_BY_ID.containsKey(entry.getKey().path()))
+                                        .toList()
+                        )
+                );
+            }
         }
 
         @SubscribeEvent
