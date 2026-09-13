@@ -6,6 +6,7 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.wdiscute.utils.network.DataEntrySyncPayload;
 import com.wdiscute.utils.network.MultiDataEntrySyncPayload;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -93,7 +94,7 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
         }
     }
 
-    public record MultiEntry<T>(ResourceLocation path, Codec<List<T>> codec)
+    public record MultiEntry<T>(ResourceLocation path, Codec<ListOperation<T>> codec)
     {
         private static final Gson GSON = new Gson();
         public static final Map<MultiEntry<?>, List<?>> MAP = new HashMap<>();
@@ -108,8 +109,10 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
 
         public static <T> MultiEntry<T> register(ResourceLocation path, Codec<T> codec)
         {
-            MultiEntry<T> entry = new MultiEntry<>(path, codec.listOf());
+            MultiEntry<T> entry = new MultiEntry<>(path, ListOperation.codec(codec));
+
             MAP.put(entry, List.of());
+
             return entry;
         }
 
@@ -118,6 +121,17 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
             STREAM_CODECS.put(this, streamCodec);
             SYNC_ENTRIES_BY_ID.put(path, this);
             return this;
+        }
+
+        public record ListOperation<T>(List<T> add, List<T> remove)
+        {
+            public static <T> Codec<ListOperation<T>> codec(Codec<T> codec)
+            {
+                return RecordCodecBuilder.create(instance -> instance.group(
+                        codec.listOf().optionalFieldOf("add", List.of()).forGetter(ListOperation::add),
+                        codec.listOf().optionalFieldOf("remove", List.of()).forGetter(ListOperation::remove)
+                ).apply(instance, ListOperation::new));
+            }
         }
 
         public static class ListDataEntryReloadListener extends SimplePreparableReloadListener<Map<MultiEntry<?>, List<?>>>
@@ -145,6 +159,9 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
                             .flatMap(o -> o.getValue().stream().findAny().stream())
                             .toList();
 
+                    List additions = new ArrayList<>();
+                    List removals = new ArrayList<>();
+
                     for (Resource resource : availableResources)
                     {
                         try (BufferedReader reader = resource.openAsReader())
@@ -153,18 +170,27 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
 
                             var result = dataEntry.codec().parse(JsonOps.INSTANCE, json);
 
-                            List currentList = new ArrayList<>(values.getOrDefault(dataEntry, List.of()));
-
-                            result.resultOrPartial(error -> LogUtils.getLogger().error("Failed to parse {}: {}", dataEntry.path, error))
-                                    .ifPresent(currentList::addAll);
-
-                            values.put(dataEntry, currentList);
-
-                        } catch (Exception e)
+                            result.resultOrPartial(error -> LogUtils.getLogger().error("Failed to parse {}: {}", dataEntry.path, error)
+                            ).ifPresent(operation ->
+                            {
+                                additions.addAll(operation.add());
+                                removals.addAll(operation.remove());
+                            });
+                        }
+                        catch (Exception e)
                         {
                             e.printStackTrace();
                         }
                     }
+
+                    List currentList = new ArrayList<>(
+                            values.getOrDefault(dataEntry, List.of())
+                    );
+
+                    currentList.addAll(additions);
+                    currentList.removeAll(removals);
+
+                    values.put(dataEntry, currentList);
                 }
 
                 return values;
