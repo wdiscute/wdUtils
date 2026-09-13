@@ -10,7 +10,6 @@ import net.minecraft.data.PackOutput;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class DataEntryProvider<T> implements DataProvider
@@ -51,14 +50,16 @@ public class DataEntryProvider<T> implements DataProvider
     {
         private final DataEntry.MultiEntry<T> dataEntry;
         private final PackOutput output;
-        private final List<T> data;
+        private final List<T> dataToAdd;
+        private final List<T> dataToRemove;
         private String customDatapackName;
 
-        public MultiEntry(PackOutput output, DataEntry.MultiEntry<T> dataEntry, List<T> data)
+        public MultiEntry(PackOutput output, DataEntry.MultiEntry<T> dataEntry, List<T> dataToAdd, List<T> dataToRemove)
         {
             this.output = output;
             this.dataEntry = dataEntry;
-            this.data = data;
+            this.dataToAdd = dataToAdd;
+            this.dataToRemove = dataToRemove;
         }
 
         public void setCustomDatapackName(String name)
@@ -69,9 +70,10 @@ public class DataEntryProvider<T> implements DataProvider
         @Override
         public CompletableFuture<?> run(CachedOutput cachedOutput)
         {
+            DataEntry.MultiEntry.ListOperation<T> operation = new DataEntry.MultiEntry.ListOperation<>(dataToAdd, dataToRemove);
 
             JsonElement json = dataEntry.codec()
-                    .encodeStart(JsonOps.INSTANCE, data)
+                    .encodeStart(JsonOps.INSTANCE, operation)
                     .getOrThrow();
 
             Path path = output.getOutputFolder(PackOutput.Target.DATA_PACK)
