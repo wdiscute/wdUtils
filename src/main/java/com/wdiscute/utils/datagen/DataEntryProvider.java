@@ -62,9 +62,17 @@ public class DataEntryProvider<T> implements DataProvider
             this.dataToRemove = dataToRemove;
         }
 
+        public MultiEntry(PackOutput output, DataEntry.MultiEntry<T> dataEntry, List<T> data)
+        {
+            this.output = output;
+            this.dataEntry = dataEntry;
+            this.dataToAdd = data;
+            this.dataToRemove = List.of();
+        }
+
         public void setCustomDatapackName(String name)
         {
-            customDatapackName = customDatapackName;
+            customDatapackName = name;
         }
 
         @Override
