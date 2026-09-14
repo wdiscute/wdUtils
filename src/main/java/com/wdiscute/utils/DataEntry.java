@@ -1,7 +1,9 @@
 package com.wdiscute.utils;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
@@ -20,12 +22,12 @@ import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.checkerframework.checker.units.qual.A;
 
 import java.io.BufferedReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
 {
@@ -136,6 +138,7 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
 
         public static class ListDataEntryReloadListener extends SimplePreparableReloadListener<Map<MultiEntry<?>, List<?>>>
         {
+            @SuppressWarnings("unchecked")
             @Override
             protected Map<MultiEntry<?>, List<?>> prepare(ResourceManager resourceManager, ProfilerFiller profiler)
             {
@@ -149,7 +152,7 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
                             .entrySet()
                             .stream()
                             .filter(o -> o.getKey().getPath()
-                                    .equals(dataEntry.path.getNamespace() + "/" + dataEntry.path().getPath() + ".json"))
+                                    .equals(dataEntry.path.getNamespace() + "/" + dataEntry.path.getPath() + ".json"))
                             .toList();
 
                     availableJsons.forEach(System.out::println);
@@ -159,22 +162,35 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
                             .flatMap(o -> o.getValue().stream().findAny().stream())
                             .toList();
 
-                    List additions = new ArrayList<>();
-                    List removals = new ArrayList<>();
+                    List currentList = new ArrayList<>();
+                    List<JsonElement> currentJsons = new ArrayList<>();
+                    List<JsonElement> removalJsons = new ArrayList<>();
 
                     for (Resource resource : availableResources)
                     {
                         try (BufferedReader reader = resource.openAsReader())
                         {
                             JsonElement json = GsonHelper.fromJson(GSON, reader, JsonElement.class);
+                            JsonObject jsonObject = json.getAsJsonObject();
+
+                            JsonArray removeArray = jsonObject.getAsJsonArray("remove");
+
+                            if (removeArray != null)
+                                for (JsonElement removalJson : removeArray)
+                                    removalJsons.add(removalJson.deepCopy());
 
                             var result = dataEntry.codec().parse(JsonOps.INSTANCE, json);
 
                             result.resultOrPartial(error -> LogUtils.getLogger().error("Failed to parse {}: {}", dataEntry.path, error)
                             ).ifPresent(operation ->
                             {
-                                additions.addAll(operation.add());
-                                removals.addAll(operation.remove());
+                                currentList.addAll(operation.add());
+
+                                JsonArray addArray = jsonObject.getAsJsonArray("add");
+
+                                if (addArray != null)
+                                    for (JsonElement additionJson : addArray)
+                                        currentJsons.add(additionJson.deepCopy());
                             });
                         }
                         catch (Exception e)
@@ -183,12 +199,16 @@ public record DataEntry<T>(ResourceLocation rl, Codec<T> codec)
                         }
                     }
 
-                    List currentList = new ArrayList<>(
-                            values.getOrDefault(dataEntry, List.of())
-                    );
+                    for (int i = currentList.size() - 1; i >= 0; i--)
+                    {
+                        JsonElement currentJson = currentJsons.get(i);
 
-                    currentList.addAll(additions);
-                    currentList.removeAll(removals);
+                        if (removalJsons.stream().anyMatch(removalJson -> removalJson.equals(currentJson)))
+                        {
+                            currentList.remove(i);
+                            currentJsons.remove(i);
+                        }
+                    }
 
                     values.put(dataEntry, currentList);
                 }
