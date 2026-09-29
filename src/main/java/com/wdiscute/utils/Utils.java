@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.wdiscute.utils.network.DataEntrySyncPayload;
 import com.wdiscute.utils.network.MultiDataEntrySyncPayload;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -47,6 +48,11 @@ public class Utils
     public static Identifier rl(String path)
     {
         return Identifier.fromNamespaceAndPath("minecraft", path);
+    }
+
+    public static boolean hasShiftDown()
+    {
+        return Minecraft.getInstance().hasShiftDown();
     }
 
     @SafeVarargs
