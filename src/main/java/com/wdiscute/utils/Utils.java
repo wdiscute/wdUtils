@@ -2,22 +2,27 @@ package com.wdiscute.utils;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import io.netty.buffer.ByteBuf;
-import net.minecraft.client.Minecraft;
+import com.wdiscute.utils.network.DataEntrySyncPayload;
+import com.wdiscute.utils.network.MultiDataEntrySyncPayload;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.locale.Language;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
+import net.neoforged.neoforge.event.TagsUpdatedEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -41,11 +46,6 @@ public class Utils
     public static Identifier rl(String path)
     {
         return Identifier.fromNamespaceAndPath("minecraft", path);
-    }
-
-    public static boolean hasShiftDown()
-    {
-        return Minecraft.getInstance().hasShiftDown();
     }
 
     @SafeVarargs
@@ -175,19 +175,26 @@ public class Utils
 
     public static <T> void ifNotNull(T o, Consumer<? super T> action)
     {
-        if(o != null)
+        if (o != null)
             action.accept(o);
     }
 
     public static <T> void ifNull(T o, Consumer<? super T> action)
     {
-        if(o == null)
+        if (o == null)
             action.accept(null);
     }
 
-    public static boolean i18nExists(String key)
+    @SafeVarargs
+    public static <T> T orElse(T o, T... orElse)
     {
-        return Language.getInstance().getLanguageData().get(key) != null;
+        if (o != null)
+            return o;
+        else
+            for (T maybeANullValueAsWellWhoKnowsIGuessJavaKnows : orElse)
+                if (maybeANullValueAsWellWhoKnowsIGuessJavaKnows != null)
+                    return maybeANullValueAsWellWhoKnowsIGuessJavaKnows;
+        return null;
     }
 
     public record Duo<F, S>(F first, S second)
@@ -214,15 +221,16 @@ public class Utils
             ).apply(instance, Duo::new));
         }
 
-        public static <F, S> StreamCodec<ByteBuf, Duo<F, S>> streamCodec(
-                StreamCodec<ByteBuf, F> firstCodec,
-                StreamCodec<ByteBuf, S> secondCodec
+        public static <B, F, S> StreamCodec<B, Duo<F, S>> streamCodec(
+                StreamCodec<? super B, F> firstCodec,
+                StreamCodec<? super B, S> secondCodec
         )
         {
             return StreamCodec.composite(
                     firstCodec, Duo::first,
                     secondCodec, Duo::second,
-                    Duo::new);
+                    Duo::new
+            );
         }
     }
 
@@ -252,19 +260,6 @@ public class Utils
                     secondCodec.fieldOf(secondName).forGetter(Trio::second),
                     thirdCodec.fieldOf(thirdName).forGetter(Trio::third)
             ).apply(instance, Trio::new));
-        }
-
-        public static <F, S, T> StreamCodec<ByteBuf, Trio<F, S, T>> streamCodec(
-                StreamCodec<ByteBuf, F> firstCodec,
-                StreamCodec<ByteBuf, S> secondCodec,
-                StreamCodec<ByteBuf, T> thirdCodec
-        )
-        {
-            return StreamCodec.composite(
-                    firstCodec, Trio::first,
-                    secondCodec, Trio::second,
-                    thirdCodec, Trio::third,
-                    Trio::new);
         }
     }
 
@@ -299,114 +294,6 @@ public class Utils
                     forthCodec.fieldOf(forthName).forGetter(Quad::forth)
             ).apply(instance, Quad::new));
         }
-
-        public static <F, S, T, Q> StreamCodec<ByteBuf, Quad<F, S, T, Q>> streamCodec(
-                StreamCodec<ByteBuf, F> firstCodec,
-                StreamCodec<ByteBuf, S> secondCodec,
-                StreamCodec<ByteBuf, T> thirdCodec,
-                StreamCodec<ByteBuf, Q> forthCodec
-        )
-        {
-            return StreamCodec.composite(
-                    firstCodec, Quad::first,
-                    secondCodec, Quad::second,
-                    thirdCodec, Quad::third,
-                    forthCodec, Quad::forth,
-                    Quad::new);
-        }
-    }
-
-    public static class InventoryManagement
-    {
-        public static List<ItemStack> getListFromInventory(Inventory inventory)
-        {
-            List<ItemStack> stacks = new ArrayList<>();
-
-            for (ItemStack stack : inventory)
-            {
-                if (!stack.isEmpty())
-                    stacks.add(stack);
-            }
-
-            return stacks;
-        }
-
-        public static Map<Item, List<ItemStack>> splitIntoItems(Inventory inventory)
-        {
-            return splitIntoItems(getListFromInventory(inventory));
-        }
-
-        public static Map<Item, List<ItemStack>> splitIntoItems(List<ItemStack> items)
-        {
-            Map<Item, List<ItemStack>> playerItems = new HashMap<>();
-
-            for (ItemStack stack : items)
-                if (!stack.isEmpty())
-                    playerItems
-                            .computeIfAbsent(stack.getItem(), key -> new ArrayList<>())
-                            .add(stack);
-
-            return playerItems;
-        }
-
-        public static boolean hasEnoughItems(List<MaybeStack> cost, Inventory inventory)
-        {
-            return hasEnoughItems(cost, getListFromInventory(inventory));
-        }
-
-        //this does not check for multiple instances of the same item <-> count pair in the cost!
-        //MaybeStacks may contain item counts above 64
-        //DataComponentPatch is ignored for this method
-        public static boolean hasEnoughItems(List<MaybeStack> cost, List<ItemStack> items)
-        {
-            var playerItems = splitIntoItems(items);
-
-            for (MaybeStack costmaybeStack : cost)
-            {
-                if (!playerItems.containsKey(costmaybeStack.toItem())) return false;
-
-                int count = 0;
-                for (ItemStack stack : playerItems.get(costmaybeStack.toItem()))
-                {
-                    count += stack.getCount();
-                }
-
-                if (count < costmaybeStack.count()) return false;
-            }
-
-            return true;
-        }
-
-        public static void payItems(List<MaybeStack> costToRemove, Inventory inventory)
-        {
-            payItems(costToRemove, getListFromInventory(inventory));
-        }
-
-        //this does not check if the player has the items to pay or not! It will decrease them regardless
-        //MaybeStacks may contain item counts above 64
-        //DataComponentPatch is ignored for this method
-        public static void payItems(List<MaybeStack> costToRemove, List<ItemStack> itemsToRemoveFrom)
-        {
-            for (MaybeStack costmaybeStack : costToRemove)
-            {
-                int countRemaining = costmaybeStack.count();
-                if (countRemaining == 0) continue;
-                for (ItemStack stack : splitIntoItems(itemsToRemoveFrom).getOrDefault(costmaybeStack.toItem(), List.of()))
-                {
-                    //if stack has more than count, then break out since this cost has been paid
-                    if (stack.getCount() >= countRemaining)
-                    {
-                        stack.shrink(countRemaining);
-                        break;
-                    }
-
-                    //if stack doesn't have enough to pay, shrink countRemaining and stack count
-                    int count = stack.count();
-                    stack.shrink(countRemaining);
-                    countRemaining -= count;
-                }
-            }
-        }
     }
 
     @EventBusSubscriber(modid = Utils.MOD_ID)
@@ -416,12 +303,74 @@ public class Utils
         public static void registerReloadListeners(AddServerReloadListenersEvent event)
         {
             event.addListener(rl("wdutils_data_entry_server"), new DataEntry.DataEntryReloadListener());
+            event.addListener(rl("wdutils_list_data_entry_server"), new DataEntry.MultiEntry.ListDataEntryReloadListener());
         }
 
         @SubscribeEvent
-        public static void registerReloadListeners(AddClientReloadListenersEvent event)
+        public static void tagsUpdatedEvent(TagsUpdatedEvent event)
         {
-            event.addListener(rl("wdutils_data_entry_client"), new DataEntry.DataEntryReloadListener());
+            if (!FMLLoader.getCurrent().getDist().isClient() && ServerLifecycleHooks.getCurrentServer() != null)
+            {
+                //sync data entries
+                PacketDistributor.sendToAllPlayers(
+                        new DataEntrySyncPayload(
+                                DataEntry.MAP.entrySet().stream()
+                                        .filter(entry -> DataEntry.SYNC_ENTRIES_BY_ID.containsKey(entry.getKey().rl()))
+                                        .toList()
+                        )
+                );
+
+                //sync multi entries
+                PacketDistributor.sendToAllPlayers(
+                        new MultiDataEntrySyncPayload(
+                                DataEntry.MultiEntry.MAP.entrySet().stream()
+                                        .filter(entry -> DataEntry.MultiEntry.SYNC_ENTRIES_BY_ID.containsKey(entry.getKey().path()))
+                                        .toList()
+                        )
+                );
+            }
+        }
+
+        @SubscribeEvent
+        public static void playerLoggedInEvent(PlayerEvent.PlayerLoggedInEvent event)
+        {
+            if (event.getEntity() instanceof ServerPlayer player && !FMLLoader.getCurrent().getDist().isClient())
+            {
+                //sync data entries
+                PacketDistributor.sendToPlayer(player,
+                        new DataEntrySyncPayload(
+                                DataEntry.MAP.entrySet().stream()
+                                        .filter(entry -> DataEntry.SYNC_ENTRIES_BY_ID.containsKey(entry.getKey().rl()))
+                                        .toList()
+                        )
+                );
+
+                //sync multi entries
+                PacketDistributor.sendToPlayer(player,
+                        new MultiDataEntrySyncPayload(
+                                DataEntry.MultiEntry.MAP.entrySet().stream()
+                                        .filter(entry -> DataEntry.MultiEntry.SYNC_ENTRIES_BY_ID.containsKey(entry.getKey().path()))
+                                        .toList()
+                        )
+                );
+            }
+        }
+
+        @SubscribeEvent
+        public static void registerPayloads(final RegisterPayloadHandlersEvent event)
+        {
+            final PayloadRegistrar registrar = event.registrar("1");
+            registrar.playToClient(
+                    DataEntrySyncPayload.TYPE,
+                    DataEntrySyncPayload.STREAM_CODEC,
+                    DataEntrySyncPayload::handle
+            );
+
+            registrar.playToClient(
+                    MultiDataEntrySyncPayload.TYPE,
+                    MultiDataEntrySyncPayload.STREAM_CODEC,
+                    MultiDataEntrySyncPayload::handle
+            );
         }
     }
 }
