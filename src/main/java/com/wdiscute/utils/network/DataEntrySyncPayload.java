@@ -50,7 +50,7 @@ public record DataEntrySyncPayload(List<Map.Entry<DataEntry<?>, Object>> entries
         {
             DataEntry<?> dataEntry = entry.getKey();
 
-            buf.writeResourceLocation(dataEntry.rl());
+            buf.writeIdentifier(dataEntry.rl());
 
             writeValue(buf, dataEntry, entry.getValue());
         }
@@ -65,7 +65,7 @@ public record DataEntrySyncPayload(List<Map.Entry<DataEntry<?>, Object>> entries
 
         for (int i = 0; i < size; i++)
         {
-            var rl = buf.readResourceLocation();
+            var rl = buf.readIdentifier();
 
             DataEntry<?> dataEntry = DataEntry.SYNC_ENTRIES_BY_ID.get(rl);
 

@@ -5,7 +5,7 @@ import com.wdiscute.utils.Utils;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.ArrayList;
@@ -49,7 +49,7 @@ public record MultiDataEntrySyncPayload(List<Map.Entry<DataEntry.MultiEntry<?>, 
         {
             DataEntry.MultiEntry<?> multiEntry = entry.getKey();
 
-            buf.writeResourceLocation(multiEntry.path());
+            buf.writeIdentifier(multiEntry.path());
 
             writeList(buf, multiEntry, entry.getValue());
         }
@@ -63,7 +63,7 @@ public record MultiDataEntrySyncPayload(List<Map.Entry<DataEntry.MultiEntry<?>, 
 
         for (int i = 0; i < size; i++)
         {
-            ResourceLocation rl = buf.readResourceLocation();
+            Identifier rl = buf.readIdentifier();
 
             DataEntry.MultiEntry<?> multiEntry = DataEntry.MultiEntry.SYNC_ENTRIES_BY_ID.get(rl);
 
