@@ -7,6 +7,7 @@ import com.wdiscute.utils.network.MultiDataEntrySyncPayload;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.locale.Language;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
@@ -183,6 +184,11 @@ public class Utils
     {
         if (o == null)
             action.accept(null);
+    }
+
+    public static boolean i18nExists(String key)
+    {
+        return Language.getInstance().getLanguageData().get(key) != null;
     }
 
     @SafeVarargs
