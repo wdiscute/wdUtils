@@ -34,9 +34,9 @@ public final class ItemStackPictureInPictureRenderer extends PictureInPictureRen
 
         poseStack.scale(1, -1, -1);
 
-        poseStack.mulPose(Axis.YP.rotationDegrees(state.rotY));
-        poseStack.mulPose(Axis.ZP.rotationDegrees(state.rotZ));
-        poseStack.mulPose(Axis.XP.rotationDegrees(state.rotX));
+        poseStack.rotate(Axis.YP.rotationDegrees(state.rotY));
+        poseStack.rotate(Axis.ZP.rotationDegrees(state.rotZ));
+        poseStack.rotate(Axis.XP.rotationDegrees(state.rotX));
 
         Minecraft.getInstance().gameRenderer.lighting().setupFor(Lighting.Entry.ITEMS_FLAT);
         renderState.submit(poseStack, submitNodeCollector, LightCoordsUtil.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, 0);
