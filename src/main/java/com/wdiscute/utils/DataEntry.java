@@ -1,11 +1,14 @@
 package com.wdiscute.utils;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.FileToIdConverter;
@@ -89,7 +92,7 @@ public record DataEntry<T>(Identifier rl, Codec<T> codec)
         }
     }
 
-    public record MultiEntry<T>(Identifier path, Codec<List<T>> codec)
+    public record MultiEntry<T>(Identifier path, Codec<ListOperation<T>> codec)
     {
         private static final Gson GSON = new Gson();
         public static final Map<MultiEntry<?>, List<?>> MAP = new HashMap<>();
@@ -104,8 +107,10 @@ public record DataEntry<T>(Identifier rl, Codec<T> codec)
 
         public static <T> MultiEntry<T> register(Identifier path, Codec<T> codec)
         {
-            MultiEntry<T> entry = new MultiEntry<>(path, codec.listOf());
+            MultiEntry<T> entry = new MultiEntry<>(path, ListOperation.codec(codec));
+
             MAP.put(entry, List.of());
+
             return entry;
         }
 
@@ -116,8 +121,20 @@ public record DataEntry<T>(Identifier rl, Codec<T> codec)
             return this;
         }
 
+        public record ListOperation<T>(List<T> add, List<T> remove)
+        {
+            public static <T> Codec<ListOperation<T>> codec(Codec<T> codec)
+            {
+                return RecordCodecBuilder.create(instance -> instance.group(
+                        codec.listOf().optionalFieldOf("add", List.of()).forGetter(ListOperation::add),
+                        codec.listOf().optionalFieldOf("remove", List.of()).forGetter(ListOperation::remove)
+                ).apply(instance, ListOperation::new));
+            }
+        }
+
         public static class ListDataEntryReloadListener extends SimplePreparableReloadListener<Map<MultiEntry<?>, List<?>>>
         {
+            @SuppressWarnings("unchecked")
             @Override
             protected Map<MultiEntry<?>, List<?>> prepare(ResourceManager resourceManager, ProfilerFiller profiler)
             {
@@ -131,7 +148,7 @@ public record DataEntry<T>(Identifier rl, Codec<T> codec)
                             .entrySet()
                             .stream()
                             .filter(o -> o.getKey().getPath()
-                                    .equals(dataEntry.path.getNamespace() + "/" + dataEntry.path().getPath() + ".json"))
+                                    .equals(dataEntry.path.getNamespace() + "/" + dataEntry.path.getPath() + ".json"))
                             .toList();
 
                     availableJsons.forEach(System.out::println);
@@ -141,26 +158,55 @@ public record DataEntry<T>(Identifier rl, Codec<T> codec)
                             .flatMap(o -> o.getValue().stream().findAny().stream())
                             .toList();
 
+                    List currentList = new ArrayList<>();
+                    List<JsonElement> currentJsons = new ArrayList<>();
+                    List<JsonElement> removalJsons = new ArrayList<>();
+
                     for (Resource resource : availableResources)
                     {
                         try (BufferedReader reader = resource.openAsReader())
                         {
                             JsonElement json = GsonHelper.fromJson(GSON, reader, JsonElement.class);
+                            JsonObject jsonObject = json.getAsJsonObject();
+
+                            JsonArray removeArray = jsonObject.getAsJsonArray("remove");
+
+                            if (removeArray != null)
+                                for (JsonElement removalJson : removeArray)
+                                    removalJsons.add(removalJson.deepCopy());
 
                             var result = dataEntry.codec().parse(JsonOps.INSTANCE, json);
 
-                            List currentList = new ArrayList<>(values.getOrDefault(dataEntry, List.of()));
+                            result.resultOrPartial(error -> LogUtils.getLogger().error("Failed to parse {}: {}", dataEntry.path, error)
+                            ).ifPresent(operation ->
+                            {
+                                currentList.addAll(operation.add());
 
-                            result.resultOrPartial(error -> LogUtils.getLogger().error("Failed to parse {}: {}", dataEntry.path, error))
-                                    .ifPresent(currentList::addAll);
+                                JsonArray addArray = jsonObject.getAsJsonArray("add");
 
-                            values.put(dataEntry, currentList);
-
-                        } catch (Exception e)
+                                if (addArray != null)
+                                    for (JsonElement additionJson : addArray)
+                                        currentJsons.add(additionJson.deepCopy());
+                            });
+                        }
+                        catch (Exception e)
                         {
                             e.printStackTrace();
                         }
                     }
+
+                    for (int i = currentList.size() - 1; i >= 0; i--)
+                    {
+                        JsonElement currentJson = currentJsons.get(i);
+
+                        if (removalJsons.stream().anyMatch(removalJson -> removalJson.equals(currentJson)))
+                        {
+                            currentList.remove(i);
+                            currentJsons.remove(i);
+                        }
+                    }
+
+                    values.put(dataEntry, currentList);
                 }
 
                 return values;
