@@ -1,21 +1,53 @@
 package com.wdiscute.utils;
 
+import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class InventoryManagement
 {
+    //26.1+ adaptation where Containers now implement Iterable<ItemStack>
+    public static class ContainerIterator implements Iterable<ItemStack>, Iterator<ItemStack>
+    {
+        private final Container container;
+        private int index;
+        private final int size;
+
+        @Override
+        public @NotNull Iterator<ItemStack> iterator()
+        {
+            return this;
+        }
+
+        public ContainerIterator(Container container)
+        {
+            this.container = container;
+            this.size = container.getContainerSize();
+        }
+
+        public boolean hasNext()
+        {
+            return this.index < this.size;
+        }
+
+        public ItemStack next()
+        {
+            if (!this.hasNext())
+                throw new NoSuchElementException();
+            else
+                return this.container.getItem(this.index++);
+        }
+    }
+
     public static List<ItemStack> getListFromInventory(Inventory inventory)
     {
         List<ItemStack> stacks = new ArrayList<>();
 
-        for (ItemStack stack : inventory.items)
+        for (ItemStack stack : new ContainerIterator(inventory))
         {
             if (!stack.isEmpty())
                 stacks.add(stack);
