@@ -2,20 +2,27 @@ package com.wdiscute.utils;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.wdiscute.utils.compat.EmiCompat;
 import com.wdiscute.utils.compat.JeiCompat;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
 
@@ -130,7 +137,7 @@ public class ScreenUtils
     // 0-1
     public static void setAlphaF(float alpha)
     {
-        setAlpha((int)(Math.clamp(alpha, 0, 1) * 255.0f));
+        setAlpha((int) (Math.clamp(alpha, 0, 1) * 255.0f));
     }
 
     public static void setColor(int color)
@@ -493,5 +500,47 @@ public class ScreenUtils
             EmiCompat.displayRecipes(stack);
         else if (ModList.get().isLoaded("jei"))
             JeiCompat.displayRecipes(stack);
+    }
+
+    public static void renderItem(GuiGraphics guiGraphics, ItemStack stack, float rotY, float rotX, float rotZ, int xOffset, int yOffset, float scale)
+    {
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
+
+        if (player == null || minecraft.level == null)
+            return;
+
+        PoseStack poseStack = guiGraphics.pose();
+        MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
+
+        poseStack.pushPose();
+
+        poseStack.translate(
+                xOffset + 8.0F,
+                yOffset + 8.0F,
+                100.0F
+        );
+
+        float itemScale = 16.0F * scale;
+        poseStack.scale(itemScale, itemScale, itemScale);
+
+        poseStack.mulPose(Axis.YP.rotationDegrees(rotY));
+        poseStack.mulPose(Axis.XP.rotationDegrees(rotX));
+        poseStack.mulPose(Axis.ZP.rotationDegrees(rotZ));
+
+        minecraft.getItemRenderer().renderStatic(
+                stack,
+                ItemDisplayContext.FIXED,
+                LightTexture.FULL_BRIGHT,
+                OverlayTexture.NO_OVERLAY,
+                poseStack,
+                bufferSource,
+                minecraft.level,
+                0
+        );
+
+        bufferSource.endBatch();
+
+        poseStack.popPose();
     }
 }
