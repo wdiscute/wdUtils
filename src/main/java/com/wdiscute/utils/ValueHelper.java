@@ -6,13 +6,12 @@ import com.mojang.serialization.Codec;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.function.Supplier;
+import java.util.Optional;
 
-public class NBTCodecHelper
+public interface ValueHelper
 {
-    public static <T> void store(String name, Codec<T> codec, T data, CompoundTag compoundTag)
+    static <T> void store(String name, Codec<T> codec, T data, CompoundTag compoundTag)
     {
         if (data == null)
             return;
@@ -22,20 +21,12 @@ public class NBTCodecHelper
                 .ifPresent(tag -> compoundTag.put(name, tag));
     }
 
-    public static <T> T read(String name, Codec<T> codec, CompoundTag compoundTag, Supplier<T> orElse)
+    static <T> Optional<T> read(String name, Codec<T> codec, CompoundTag compoundTag)
     {
         Tag tag = compoundTag.get(name);
 
         return codec.decode(NbtOps.INSTANCE, tag)
                 .resultOrPartial(LogUtils.getLogger()::error)
-                .map(Pair::getFirst).orElseGet(orElse);
-    }
-
-    public static <T> @Nullable T read(String name, Codec<T> codec, CompoundTag compoundTag)
-    {
-        if (!compoundTag.contains(name))
-            return null;
-
-        return read(name, codec, compoundTag, () -> null);
+                .map(Pair::getFirst);
     }
 }

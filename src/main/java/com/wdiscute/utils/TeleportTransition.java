@@ -12,7 +12,7 @@ public record TeleportTransition(ServerLevel sl, Vec3 pos, Vec3 movements, float
 {
     public void teleport(ServerPlayer player)
     {
-        player.teleportTo(sl, pos.x, pos.y, pos.y, Set.of(), pitch, yaw);
+        player.teleportTo(sl, pos.x, pos.y, pos.z, Set.of(), pitch, yaw);
         onTeleport.accept(player);
     }
 }
