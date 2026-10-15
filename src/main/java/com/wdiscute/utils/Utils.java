@@ -1,6 +1,9 @@
 package com.wdiscute.utils;
 
-import com.mojang.serialization.Codec;
+import com.google.common.collect.ImmutableMap;
+import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.*;
+import com.mojang.serialization.codecs.BaseMapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.wdiscute.utils.network.DataEntrySyncPayload;
 import com.wdiscute.utils.network.MultiDataEntrySyncPayload;
@@ -10,6 +13,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.event.AddReloadListenerEvent;
@@ -167,13 +171,13 @@ public class Utils
 
     public static <T> void ifNotNull(T o, Consumer<? super T> action)
     {
-        if(o != null)
+        if (o != null)
             action.accept(o);
     }
 
     public static <T> void ifNull(T o, Consumer<? super T> action)
     {
-        if(o == null)
+        if (o == null)
             action.accept(null);
     }
 
@@ -285,6 +289,65 @@ public class Utils
                     thirdCodec.fieldOf(thirdName).forGetter(Quad::third),
                     forthCodec.fieldOf(forthName).forGetter(Quad::forth)
             ).apply(instance, Quad::new));
+        }
+    }
+
+    public static <K, V> StrictUnboundedMapCodec<K, V> strictUnboundedMap(Codec<K> key, Codec<V> value)
+    {
+        return new StrictUnboundedMapCodec<>(key, value);
+    }
+
+    public record StrictUnboundedMapCodec<K, V>(Codec<K> keyCodec,
+                                                Codec<V> elementCodec) implements Codec<Map<K, V>>, BaseMapCodec<K, V>
+    {
+        @Override
+        public <T> DataResult<Map<K, V>> decode(DynamicOps<T> ops, MapLike<T> input)
+        {
+            ImmutableMap.Builder<K, V> builder = ImmutableMap.builder();
+
+            for (Pair<T, T> pair : input.entries().toList())
+            {
+                DataResult<K> dataresult = this.keyCodec().parse(ops, pair.getFirst());
+                DataResult<V> dataresult1 = this.elementCodec().parse(ops, pair.getSecond());
+                DataResult<Pair<K, V>> dataresult2 = dataresult.apply2stable(Pair::of, dataresult1);
+                var optional = dataresult2.error();
+                if (optional.isPresent())
+                {
+                    String s = optional.get().message();
+                    return DataResult.error(() -> dataresult.result().isPresent() ? "Map entry '" + dataresult.result().get() + "' : " + s : s);
+                }
+
+                if (!dataresult2.result().isPresent())
+                {
+                    return DataResult.error(() -> "Empty or invalid map contents are not allowed");
+                }
+
+                Pair<K, V> pair1 = dataresult2.result().get();
+                builder.put(pair1.getFirst(), pair1.getSecond());
+            }
+
+            Map<K, V> map = builder.build();
+            return DataResult.success(map);
+        }
+
+        @Override
+        public <T> DataResult<Pair<Map<K, V>, T>> decode(DynamicOps<T> ops, T input)
+        {
+            return ops.getMap(input)
+                    .setLifecycle(Lifecycle.stable())
+                    .flatMap(p_301208_ -> this.decode(ops, (MapLike<T>) p_301208_))
+                    .map(p_300941_ -> Pair.of((Map<K, V>) p_300941_, input));
+        }
+
+        public <T> DataResult<T> encode(Map<K, V> input, DynamicOps<T> ops, T value)
+        {
+            return this.encode(input, ops, ops.mapBuilder()).build(value);
+        }
+
+        @Override
+        public String toString()
+        {
+            return "StrictUnboundedMapCodec[" + this.keyCodec + " -> " + this.elementCodec + "]";
         }
     }
 
