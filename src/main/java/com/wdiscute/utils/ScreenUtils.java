@@ -1,7 +1,7 @@
 package com.wdiscute.utils;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Axis;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -13,6 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -25,6 +26,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
+import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -542,5 +544,29 @@ public class ScreenUtils
         bufferSource.endBatch();
 
         poseStack.popPose();
+    }
+
+    public static void fillGradient(GuiGraphics graphics,
+                                     int x1, int y1, int sizeX, int sizeY,
+                                     int topLeft, int topRight,
+                                     int bottomRight, int bottomLeft)
+    {
+        int x2 = x1 + sizeX;
+        int y2 = y1 + sizeY;
+        Matrix4f matrix = graphics.pose().last().pose();
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+
+        BufferBuilder buf = Tesselator.getInstance()
+                .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        buf.addVertex(matrix, x1, y1, 0).setColor(topLeft);
+        buf.addVertex(matrix, x1, y2, 0).setColor(bottomLeft);
+        buf.addVertex(matrix, x2, y2, 0).setColor(bottomRight);
+        buf.addVertex(matrix, x2, y1, 0).setColor(topRight);
+        BufferUploader.drawWithShader(buf.buildOrThrow());
+
+        RenderSystem.disableBlend();
     }
 }
