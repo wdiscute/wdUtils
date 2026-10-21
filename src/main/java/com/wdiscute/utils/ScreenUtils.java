@@ -16,6 +16,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -547,26 +548,68 @@ public class ScreenUtils
     }
 
     public static void fillGradient(GuiGraphics graphics,
-                                     int x1, int y1, int sizeX, int sizeY,
-                                     int topLeft, int topRight,
-                                     int bottomRight, int bottomLeft)
+                                    int x1, int y1, int sizeX, int sizeY,
+                                    int topLeft, int topRight,
+                                    int bottomRight, int bottomLeft)
     {
         int x2 = x1 + sizeX;
         int y2 = y1 + sizeY;
         Matrix4f matrix = graphics.pose().last().pose();
 
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-
-        BufferBuilder buf = Tesselator.getInstance()
-                .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        VertexConsumer buf = graphics.bufferSource().getBuffer(RenderType.gui());
         buf.addVertex(matrix, x1, y1, 0).setColor(topLeft);
         buf.addVertex(matrix, x1, y2, 0).setColor(bottomLeft);
         buf.addVertex(matrix, x2, y2, 0).setColor(bottomRight);
         buf.addVertex(matrix, x2, y1, 0).setColor(topRight);
-        BufferUploader.drawWithShader(buf.buildOrThrow());
+    }
 
-        RenderSystem.disableBlend();
+    //i totally wrote this code
+    private static int mixArgb(int c1, int c2)
+    {
+        int a = (((c1 >>> 24) & 0xFF) + ((c2 >>> 24) & 0xFF)) / 2;
+        int r = (((c1 >> 16) & 0xFF) + ((c2 >> 16) & 0xFF)) / 2;
+        int g = (((c1 >> 8) & 0xFF) + ((c2 >> 8) & 0xFF)) / 2;
+        int b = ((c1 & 0xFF) + (c2 & 0xFF)) / 2;
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    public static void fillGradient(GuiGraphics graphics,
+                                    int x1, int y1, int sizeX, int sizeY,
+                                    int topLeft, int bottomRight)
+    {
+        int mid = mixArgb(topLeft, bottomRight);
+        fillGradient(graphics, x1, y1, sizeX, sizeY, topLeft, mid, bottomRight, mid);
+    }
+
+    public static int lerpArgb(float t, int from, int to)
+    {
+        t = Math.clamp(t, 0f, 1f);
+
+        int a = lerpChannel(t, from >>> 24, to >>> 24);
+        int r = lerpChannel(t, (from >> 16) & 0xFF, (to >> 16) & 0xFF);
+        int g = lerpChannel(t, (from >> 8) & 0xFF, (to >> 8) & 0xFF);
+        int b = lerpChannel(t, from & 0xFF, to & 0xFF);
+
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    private static int lerpChannel(float t, int a, int b)
+    {
+        return Math.round(a + (b - a) * t);
+    }
+
+    public static int gradient(long time, double speed, int... colors)
+    {
+        if (colors.length == 0) return 0;
+        if (colors.length == 1) return colors[0];
+
+        int n = colors.length;
+
+        double pos = Math.floorMod(time, (long) (speed * n)) / speed;
+
+        int i = (int) pos;
+        float t = (float) (pos - i);
+
+        return lerpArgb(t, colors[i], colors[(i + 1) % n]);
     }
 }
