@@ -17,7 +17,7 @@ public interface ValueHelper
             return;
 
         codec.encodeStart(NbtOps.INSTANCE, data)
-                .resultOrPartial(LogUtils.getLogger()::error)
+                .resultOrPartial(Utils::nothing)
                 .ifPresent(tag -> compoundTag.put(name, tag));
     }
 
@@ -26,7 +26,7 @@ public interface ValueHelper
         Tag tag = compoundTag.get(name);
 
         return codec.decode(NbtOps.INSTANCE, tag)
-                .resultOrPartial(LogUtils.getLogger()::error)
+                .resultOrPartial(Utils::nothing)
                 .map(Pair::getFirst);
     }
 }
