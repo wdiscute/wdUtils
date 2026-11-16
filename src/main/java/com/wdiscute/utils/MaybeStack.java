@@ -70,11 +70,10 @@ public record MaybeStack(ResourceLocation identifier, int count, DataComponentPa
 
     public ItemStack toStack()
     {
-        ItemStack stack = BuiltInRegistries.ITEM.getOptional(identifier)
-                .map(ItemStack::new)
-                .orElse(ItemStack.EMPTY);
+        Item item = toItem();
+        if (item == Items.AIR) return ItemStack.EMPTY;
 
-        stack.setCount(count);
+        ItemStack stack = new ItemStack(item, count);
         stack.applyComponents(patch);
         return stack;
     }
