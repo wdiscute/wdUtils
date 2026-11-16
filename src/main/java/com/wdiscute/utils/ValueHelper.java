@@ -1,0 +1,46 @@
+package com.wdiscute.utils;
+
+import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.Codec;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
+import java.util.Optional;
+
+public interface ValueHelper
+{
+    static <T> void store(String name, Codec<T> codec, T data, ValueOutput output)
+    {
+        if (data == null)
+            return;
+
+        output.store(name, codec, data);
+    }
+
+    static <T> void store(String name, Codec<T> codec, T data, CompoundTag compoundTag)
+    {
+        if (data == null)
+            return;
+
+        codec.encodeStart(NbtOps.INSTANCE, data)
+                .resultOrPartial(Utils::nothing)
+                .ifPresent(tag -> compoundTag.put(name, tag));
+    }
+
+    static <T> Optional<T> read(String name, Codec<T> codec, ValueInput input)
+    {
+        return input.read(name, codec);
+    }
+
+    static <T> Optional<T> read(String name, Codec<T> codec, CompoundTag compoundTag)
+    {
+        Tag tag = compoundTag.get(name);
+
+        return codec.decode(NbtOps.INSTANCE, tag)
+                .resultOrPartial(Utils::nothing)
+                .map(Pair::getFirst);
+    }
+}
